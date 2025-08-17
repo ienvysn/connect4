@@ -1,26 +1,20 @@
 const express = require("express");
-const app = express();
-const port = 3000;
-
-//web-socket
-const socketio = require("socket.io");
 const http = require("http");
+const { Server } = require("socket.io");
+const registerSocketHandlers = require("./sockets");
+
+const app = express();
 const server = http.createServer(app);
-io = socketio(server);
+const io = new Server(server);
 
-io.on("connection", (socket) => {
-  console.log("New connection");
-});
-//routes
-const matchRoute = require("./routes/matches");
-
-//main app
 app.use(express.static("public"));
-app.use("/match", matchRoute);
-app.get("/", (req, res) => {
-  res.send("Welcome to Connect 4!");
+
+// hook up socket.io handlers
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+  registerSocketHandlers(io, socket); // delegate to sockets.js
 });
 
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+server.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
 });
