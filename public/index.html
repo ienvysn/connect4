@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connect 4 Game</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-container">
+      <!-- HEADER -->
+      <header class="header">
+        <h1>Connect 4</h1>
+        <div class="timer">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>00:45</span>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT -->
+      <section class="main-content">
+        <!-- PLAYER 1 CARD -->
+        <aside class="player-card player-one">
+          <div class="player-info">
+            <img
+              src="https://i.pravatar.cc/150?u=player1"
+              alt="Player 1 Avatar"
+            />
+            <div class="player-details">
+              <h2>Player 1</h2>
+              <p>Score: 2</p>
+            </div>
+          </div>
+          <div>
+            <p class="turn-status-text">Current Turn</p>
+            <div class="turn-indicator current-turn">
+              <span class="p1-label">P1</span>
+              <span class="p2-label">P2</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- GAME BOARD -->
+        <div class="game-board-area">
+          <div class="turn-progress-bar">
+            <div class="progress"></div>
+          </div>
+          <div class="board">
+            <!-- This will be a 7x6 grid, total 42 slots -->
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"><div class="piece p1"></div></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"><div class="piece p1"></div></div>
+            <div class="slot"><div class="piece p2"></div></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+
+          </div>
+        </div>
+
+        <!-- PLAYER 2 CARD -->
+        <aside class="player-card player-two">
+          <div class="player-info">
+            <img
+              src="https://i.pravatar.cc/150?u=player2"
+              alt="Player 2 Avatar"
+            />
+            <div class="player-details">
+              <h2>Player 2</h2>
+              <p>Score: 1</p>
+            </div>
+          </div>
+          <div>
+            <p class="turn-status-text">Waiting</p>
+            <div class="turn-indicator waiting">
+              <span class="p1-label">P1</span>
+              <span class="p2-label">P2</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <div class="footer-left">
+
+          <button class="btn footer-btn">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5"
+              />
+            </svg>
+            Forfeit
+          </button>
+        </div>
+        <div class="footer-right">
+
+      </footer>
+    </main>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+    </script>
+  </body>
+</html>
