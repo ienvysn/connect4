@@ -17,7 +17,25 @@ async function createMatch(socketId, username) {
 
   return newMatch.save(); // save the db
 }
+async function setPlayerReady(matchId, playerId) {
+  const match = await Match.findOne({ matchId });
+  if (!match) throw new Error("Match not found.");
 
+  const player = match.players.find((p) => p.socketId === playerId);
+  if (player) {
+    player.isReady = true;
+  }
+
+  // Check if all players are ready
+  const allReady =
+    match.players.length === 2 && match.players.every((p) => p.isReady);
+  if (allReady) {
+    match.status = "countdown";
+  }
+
+  await match.save();
+  return match;
+}
 async function joinMatch(matchId, socketId, username) {
   const match = await Match.findOne({ matchId: matchId.toUpperCase() }); //find match from db
 
@@ -128,10 +146,10 @@ function stopTurnTimer(matchId) {
     delete timers[matchId];
   }
 }
-
 module.exports = {
   createMatch,
   joinMatch,
+  setPlayerReady,
   applyMove,
   startTurnTimer,
   stopTurnTimer,

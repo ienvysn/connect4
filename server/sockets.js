@@ -6,15 +6,11 @@ function registerSocketHandlers(io, socket) {
     try {
       const match = await roomManager.createMatch(socket.id, username);
       socket.join(match.matchId);
-      console.log(
-        `Match ${match.matchId} created by ${username} (${socket.id})`
-      );
       socket.emit("message", { type: "match_created", matchId: match.matchId });
     } catch (error) {
-      console.error("Create match error:", error);
       socket.emit("message", {
         type: "error",
-        error: "Could not create match. Please try again.",
+        error: "Could not create match.",
       });
     }
   });
@@ -23,39 +19,21 @@ function registerSocketHandlers(io, socket) {
     try {
       const match = await roomManager.joinMatch(matchId, socket.id, username);
       socket.join(matchId);
-      console.log(`Player ${username} (${socket.id}) joined match ${matchId}`);
-
-      // Notify both players that the game is starting
-      io.to(matchId).emit("message", {
-        type: "game_state", // Use a consistent event name
-        match,
-      });
-
-      roomManager.startTurnTimer(io, matchId);
+      // Notify everyone in the room (both players) of the new state
+      io.to(matchId).emit("message", { type: "game_state", match });
     } catch (error) {
-      console.error(`Join match error for ${matchId}:`, error);
       socket.emit("message", { type: "error", error: error.message });
     }
   });
 
-  // **FIX:** New listener for when a client loads the game page
   socket.on("player_ready", async ({ matchId }) => {
     try {
       const match = await Match.findOne({ matchId });
       if (match) {
-        // Add this socket to the room in case it's a reconnect/refresh
         socket.join(matchId);
-        // Send the current game state to the player who just loaded
-        socket.emit("message", {
-          type: "game_state",
-          match,
-        });
-        console.log(
-          `Sent game state for match ${matchId} to player ${socket.id}`
-        );
+        socket.emit("message", { type: "game_state", match });
       }
     } catch (error) {
-      console.error(`Player ready error for ${matchId}:`, error);
       socket.emit("message", {
         type: "error",
         error: "Could not retrieve match data.",
@@ -63,10 +41,44 @@ function registerSocketHandlers(io, socket) {
     }
   });
 
+  socket.on("player_set_ready", async ({ matchId }) => {
+    try {
+      let match = await roomManager.setPlayerReady(matchId, socket.id);
+
+      io.to(matchId).emit("message", { type: "game_state", match });
+
+      if (match.status === "countdown") {
+        io.to(matchId).emit("message", {
+          type: "countdown_start",
+          duration: 5,
+        });
+
+        setTimeout(async () => {
+          const finalMatch = await Match.findOne({ matchId });
+          if (finalMatch.status !== "countdown") return; // Prevent race conditions
+
+          finalMatch.status = "in-progress";
+          finalMatch.turn = finalMatch.players[0].socketId;
+          await finalMatch.save();
+
+          io.to(matchId).emit("message", {
+            type: "game_state",
+            match: finalMatch,
+          });
+          roomManager.startTurnTimer(io, matchId);
+        }, 5000);
+      }
+    } catch (error) {
+      socket.emit("message", {
+        type: "error",
+        error: "Could not set ready status.",
+      });
+    }
+  });
+
   socket.on("make_move", async ({ matchId, column }) => {
     try {
       const match = await roomManager.applyMove(matchId, socket.id, column);
-
       if (!match) {
         socket.emit("message", { type: "error", error: "Invalid move." });
         return;
@@ -93,7 +105,6 @@ function registerSocketHandlers(io, socket) {
         roomManager.startTurnTimer(io, matchId);
       }
     } catch (error) {
-      console.error(`Make move error in ${matchId}:`, error);
       socket.emit("message", { type: "error", error: error.message });
     }
   });
