@@ -1,31 +1,16 @@
+/* @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"); */
+
 :root {
-  /* Colors from the original game theme */
-  --background-start: #1e101c; /* Original --board-bg */
-  --background-mid: #2e1a2c; /* Original --bg-color */
-  --background-end: #1e101c; /* Original --board-bg */
-  --card-bg: rgba(
-    58,
-    36,
-    55,
-    0.1
-  ); /* Semi-transparent version of original --card-bg */
-  --card-border: rgba(
-    90,
-    64,
-    87,
-    0.2
-  ); /* Semi-transparent version of original --border-color */
-  --primary-accent: #c9afff;
-  --primary-accent-dark: #7b42e6; /* A darker purple for gradients */
-  --text-primary: #eae6f0; /* Original --text-color */
-  --text-secondary: #a396a0; /* Original --text-muted */
-  --input-bg: rgba(
-    30,
-    16,
-    28,
-    0.5
-  ); /* Semi-transparent version of original --board-bg */
-  --font-family: "Inter", sans-serif;
+  /* Game Theme Colors */
+  --bg-color: #2e1a2c;
+  --board-bg: #1e101c;
+  --card-bg: #3a2437;
+  --border-color: #5a4057;
+  --text-color: #eae6f0;
+  --text-muted: #a396a0;
+  --primary-accent: #8a4fff;
+  --primary-accent-hover: #7b42e6;
+  --font-family: "Poppins", sans-serif;
 }
 
 * {
@@ -36,8 +21,8 @@
 
 body {
   font-family: var(--font-family);
-  background-color: var(--background-start);
-  color: var(--text-primary);
+  background-color: var(--bg-color);
+  color: var(--text-color);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -45,132 +30,124 @@ body {
   padding: 1.5rem;
 }
 
-.lobby-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    135deg,
-    var(--background-start),
-    var(--background-mid),
-    var(--background-end)
-  );
-  z-index: -1;
-}
-
 .lobby-container {
   width: 100%;
-  max-width: 420px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 2.5rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  max-width: 450px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2.5rem 3rem;
   text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .lobby-header {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
 .logo {
   display: inline-block;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  background: linear-gradient(
-    45deg,
-    var(--primary-accent),
-    var(--primary-accent-dark)
-  );
+  background-color: var(--primary-accent);
   color: white;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  line-height: 50px;
+  line-height: 60px;
   margin-bottom: 1rem;
+  box-shadow: 0 4px 15px rgba(138, 79, 255, 0.3);
 }
 
 .lobby-header h1 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
 .lobby-header p {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 1rem;
+}
+
+.form-wrapper {
+  border-top: 1px solid var(--border-color);
+  padding-top: 2rem;
+  margin-top: 2rem;
 }
 
 .input-group {
   position: relative;
   margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.input-group.username-group {
+  margin-bottom: 2rem;
 }
 
 .input-group svg {
   position: absolute;
-  left: 15px;
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   pointer-events: none;
+  width: 20px;
+  height: 20px;
 }
 
 input[type="text"] {
   width: 100%;
-  padding: 0.9rem 1rem 0.9rem 3rem; /* Left padding for icon */
-  background-color: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  color: var(--text-primary);
+  padding: 1rem 1rem 1rem 3.5rem; /* Increased left padding */
+  background-color: var(--board-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-color);
   font-family: inherit;
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input[type="text"]::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 input[type="text"]:focus {
   outline: none;
   border-color: var(--primary-accent);
-  box-shadow: 0 0 0 3px rgba(138, 79, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(138, 79, 255, 0.25);
 }
 
 .action-tabs {
   display: flex;
-  background-color: var(--input-bg);
-  border-radius: 10px;
-  padding: 5px;
-  margin-bottom: 1.5rem;
+  background-color: var(--board-bg);
+  border-radius: 8px;
+  padding: 4px;
 }
 
 .tab-link {
   flex: 1;
-  padding: 0.7rem;
+  padding: 0.8rem;
   border: none;
   background-color: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .tab-link.active {
   background-color: var(--primary-accent);
   color: white;
-  box-shadow: 0 2px 10px rgba(138, 79, 255, 0.3);
 }
 
 .tab-content {
   display: none;
+  margin-top: 2rem;
 }
 
 .tab-content.active {
@@ -178,43 +155,44 @@ input[type="text"]:focus {
 }
 
 .tab-content p {
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .btn {
   width: 100%;
-  padding: 0.9rem;
+  padding: 1rem;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-primary {
-  background: linear-gradient(
-    45deg,
-    var(--primary-accent),
-    var(--primary-accent-dark)
-  );
+  background-color: var(--primary-accent);
   color: white;
 }
 .btn-primary:hover {
+  background-color: var(--primary-accent-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(138, 79, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .btn-secondary {
-  background-color: var(--input-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--card-border);
+  background-color: #1e101c;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
 .btn-secondary:hover {
-  background-color: var(--card-border);
+  background-color: var(--border-color);
+  border-color: var(--text-muted);
 }
 
 .error {
@@ -223,4 +201,8 @@ input[type="text"]:focus {
   text-align: center;
   min-height: 1.2rem;
   margin-top: 1.5rem;
+}
+
+.lobby-background {
+  display: none;
 }

@@ -13,11 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Tab Navigation Logic ---
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      // Remove active class from all tabs and content
       tabs.forEach((item) => item.classList.remove("active"));
       tabContents.forEach((content) => content.classList.remove("active"));
-
-      // Add active class to the clicked tab and corresponding content
       tab.classList.add("active");
       document.getElementById(tab.dataset.tab).classList.add("active");
     });
@@ -53,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = `/game.html?matchId=${msg.matchId}`;
     }
 
-    if (msg.type === "game_start") {
+    if (msg.type === "game_state") {
       // Player 2 (joiner) gets redirected
       window.location.href = `/game.html?matchId=${msg.match.matchId}`;
     }
