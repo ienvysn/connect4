@@ -142,7 +142,7 @@ body {
   width: 100%;
   background-color: var(--primary-accent);
 }
-.ready-btn:disabled {
+.ready-btn {
   background-color: var(--border-color);
   cursor: not-allowed;
 }

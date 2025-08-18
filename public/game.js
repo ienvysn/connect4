@@ -1,12 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const socket = io();
-
-  // --- State Management ---
   let currentMatch = null;
   let myPlayerId = null;
   let timerInterval = null;
 
-  // --- DOM Elements ---
   const boardElement = document.querySelector(".board");
   const p1Name = document.getElementById("player1-name"),
     p2Name = document.getElementById("player2-name");
@@ -24,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const newGameBtn = document.getElementById("new-game-btn");
   const matchIdDisplay = document.getElementById("match-id-display");
 
-  // --- Initialization ---
   const urlParams = new URLSearchParams(window.location.search);
   const matchId = urlParams.get("matchId");
   if (!matchId) {
@@ -34,7 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   matchIdDisplay.textContent = `Match ID: ${matchId}`;
 
-  // --- Socket Event Handlers ---
   socket.on("connect", () => {
     myPlayerId = socket.id;
     socket.emit("player_ready", { matchId });
@@ -42,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("message", (msg) => {
     switch (msg.type) {
+      case "player_joined":
       case "game_state":
         currentMatch = msg.match;
         renderAll(currentMatch);
@@ -74,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // --- Rendering ---
   function renderAll(match) {
     if (!match) return;
     renderBoard(match);
@@ -95,9 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const piece = document.createElement("div");
           piece.classList.add("piece");
           const player = match.players.find((p) => p.playerNumber === cell);
-          if (player) {
+          if (player)
             piece.classList.add(player.playerNumber === 1 ? "p1" : "p2");
-          }
           slot.appendChild(piece);
         }
         if (isMyTurn) slot.classList.add("my-turn-hover");
@@ -111,10 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const p2 = match.players.find((p) => p.playerNumber === 2);
     p1Name.textContent = p1 ? p1.username : "Player 1";
     p2Name.textContent = p2 ? p2.username : "Waiting...";
-
     p1Turn.classList.remove("current-turn", "waiting");
     p2Turn.classList.remove("current-turn", "waiting");
-
     if (match.status === "in-progress" && match.turn) {
       const turnPlayer = match.players.find((p) => p.socketId === match.turn);
       if (turnPlayer) {
@@ -131,16 +123,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // **FIXED:** Rewritten to be more robust and clear
   function renderReadyStates(match) {
     const p1 = match.players.find((p) => p.playerNumber === 1);
     const p2 = match.players.find((p) => p.playerNumber === 2);
 
-    // This is the main condition to check if the game is in the "ready up" phase
-    const isReadyPhase =
-      match.status === "waiting" && match.players.length === 2;
-
-    // Handle Player 1's card
+    // 1. Determine if the game is in the "Ready Up" phase.
+    const isReadyPhase = match.status === "in-progress" && p1 && p2;
+    console.log(match.status);
+    console.log(isReadyPhase);
+    // 2. Update Player 1's UI
     if (p1) {
       p1Indicator.className =
         "ready-indicator " + (p1.isReady ? "ready" : "not-ready");
@@ -149,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
       p1ReadyBtn.disabled = p1.isReady || p1.socketId !== myPlayerId;
     }
 
-    // Handle Player 2's card
+    // 3. Update Player 2's UI
     if (p2) {
       p2Indicator.className =
         "ready-indicator " + (p2.isReady ? "ready" : "not-ready");
@@ -157,13 +148,12 @@ document.addEventListener("DOMContentLoaded", () => {
       p2ReadyBtn.textContent = p2.isReady ? "Ready!" : "Ready Up";
       p2ReadyBtn.disabled = p2.isReady || p2.socketId !== myPlayerId;
     } else {
-      // If there's no player 2, their indicator is 'not-ready' and button is hidden
+      // If there is no Player 2, ensure their UI is in the default state.
       p2Indicator.className = "ready-indicator not-ready";
       p2ReadyBtn.style.display = "none";
     }
   }
 
-  // --- Event Logic ---
   boardElement.addEventListener("click", (e) => {
     const slot = e.target.closest(".slot");
     if (
@@ -187,7 +177,6 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   newGameBtn.addEventListener("click", () => (window.location.href = "/"));
 
-  // --- Timers & Overlays ---
   function startTurnTimer(duration) {
     clearInterval(timerInterval);
     let timeLeft = duration;

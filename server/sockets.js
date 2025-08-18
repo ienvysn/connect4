@@ -19,8 +19,12 @@ function registerSocketHandlers(io, socket) {
     try {
       const match = await roomManager.joinMatch(matchId, socket.id, username);
       socket.join(matchId);
-      // Notify everyone in the room (both players) of the new state
-      io.to(matchId).emit("message", { type: "game_state", match });
+
+      // **FIX:** Send a specific update to the room for the existing player
+      io.to(matchId).emit("message", { type: "player_joined", match });
+
+      // Send a success message only to the player who just joined to redirect them
+      socket.emit("message", { type: "join_success", match });
     } catch (error) {
       socket.emit("message", { type: "error", error: error.message });
     }
@@ -44,7 +48,6 @@ function registerSocketHandlers(io, socket) {
   socket.on("player_set_ready", async ({ matchId }) => {
     try {
       let match = await roomManager.setPlayerReady(matchId, socket.id);
-
       io.to(matchId).emit("message", { type: "game_state", match });
 
       if (match.status === "countdown") {
@@ -52,15 +55,12 @@ function registerSocketHandlers(io, socket) {
           type: "countdown_start",
           duration: 5,
         });
-
         setTimeout(async () => {
           const finalMatch = await Match.findOne({ matchId });
-          if (finalMatch.status !== "countdown") return; // Prevent race conditions
-
+          if (finalMatch.status !== "countdown") return;
           finalMatch.status = "in-progress";
           finalMatch.turn = finalMatch.players[0].socketId;
           await finalMatch.save();
-
           io.to(matchId).emit("message", {
             type: "game_state",
             match: finalMatch,
@@ -83,13 +83,11 @@ function registerSocketHandlers(io, socket) {
         socket.emit("message", { type: "error", error: "Invalid move." });
         return;
       }
-
       const message = {
         type: "board_update",
         board: match.board,
         nextTurn: match.turn,
       };
-
       if (match.winner) {
         message.type = "game_over";
         message.winner = match.winner;
@@ -97,7 +95,6 @@ function registerSocketHandlers(io, socket) {
           (p) => p.socketId === match.winner
         )?.username;
         if (match.winner === "draw") message.winnerUsername = "draw";
-
         io.to(matchId).emit("message", message);
         roomManager.stopTurnTimer(matchId);
       } else {
@@ -105,7 +102,7 @@ function registerSocketHandlers(io, socket) {
         roomManager.startTurnTimer(io, matchId);
       }
     } catch (error) {
-      socket.emit("message", { type: "error", error: error.message });
+      socket.emit("message", { type: "error", error: message.error });
     }
   });
 

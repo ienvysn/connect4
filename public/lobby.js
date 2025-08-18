@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- Element Selectors ---
   const tabs = document.querySelectorAll(".tab-link");
   const tabContents = document.querySelectorAll(".tab-content");
   const usernameInput = document.getElementById("username");
@@ -7,10 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const matchIdInput = document.getElementById("matchId");
   const joinBtn = document.getElementById("join-btn");
   const errorMessage = document.getElementById("error-message");
-
   const socket = io();
 
-  // --- Tab Navigation Logic ---
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       tabs.forEach((item) => item.classList.remove("active"));
@@ -20,20 +17,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // --- Event Listeners for Buttons ---
   createBtn.addEventListener("click", () => {
     const username = usernameInput.value.trim();
     if (!validateUsername(username)) return;
-
     socket.emit("create_match", { username });
   });
 
   joinBtn.addEventListener("click", () => {
     const username = usernameInput.value.trim();
     const matchId = matchIdInput.value.trim();
-
     if (!validateUsername(username)) return;
-
     if (!matchId) {
       showError("Please enter a valid Match ID.");
       return;
@@ -41,17 +34,13 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.emit("join_match", { username, matchId });
   });
 
-  // --- Socket Event Handlers ---
   socket.on("message", (msg) => {
-    console.log("Server message:", msg);
-
     if (msg.type === "match_created") {
-      // Player 1 (creator) gets redirected
       window.location.href = `/game.html?matchId=${msg.matchId}`;
+      copyToClipboard(msg.matchId);
     }
 
-    if (msg.type === "game_state") {
-      // Player 2 (joiner) gets redirected
+    if (msg.type === "join_success") {
       window.location.href = `/game.html?matchId=${msg.match.matchId}`;
     }
 
@@ -60,10 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // --- Helper Functions ---
   function validateUsername(username) {
     if (!username) {
-      showError("Please enter a username to continue.");
+      showError("Please enter a username.");
       return false;
     }
     if (username.length < 3) {
@@ -75,9 +63,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showError(message) {
     errorMessage.textContent = message;
-    // Clear the error message after 3 seconds
     setTimeout(() => {
       errorMessage.textContent = "";
     }, 3000);
   }
 });
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        console.log("Match ID copied to clipboard");
+      })
+      .catch((err) => {
+        console.error("Failed to copy text: ", err);
+      });
+  } else {
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      console.log("Match ID copied to clipboard (fallback)");
+    } catch (err) {
+      console.error("Fallback: Oops, unable to copy", err);
+    }
+    document.body.removeChild(textArea);
+  }
+}
