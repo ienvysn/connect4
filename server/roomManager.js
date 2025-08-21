@@ -6,7 +6,7 @@ const TURN_DURATION = 30000;
 
 async function createMatch(socketId, username) {
   const matchId = Math.random().toString(36).substr(2, 6).toUpperCase();
-  const player = { socketId, username, playerNumber: 1 };
+  const player = { socketId, username, playerNumber: 1, isReady: false };
 
   const newMatch = new Match({
     matchId,
@@ -14,16 +14,39 @@ async function createMatch(socketId, username) {
     board: gameEngine.initBoard(),
     status: "waiting",
   });
-
+  console.log(`Match ${matchId} created by ${username} (${socketId})`);
   return newMatch.save(); // save the db
 }
+
 async function setPlayerReady(matchId, playerId) {
+  console.log(
+    `Attempting to set ready for player ${playerId} in match ${matchId}`
+  );
   const match = await Match.findOne({ matchId });
-  if (!match) throw new Error("Match not found.");
+  if (!match) {
+    console.error(`setPlayerReady Error: Match ${matchId} not found.`);
+    throw new Error("Match not found.");
+  }
+
+  // For debugging: Log the players currently in the match from the database
+  console.log(
+    `Found match ${matchId}. Players in DB:`,
+    JSON.stringify(match.players.map((p) => p.socketId))
+  );
 
   const player = match.players.find((p) => p.socketId === playerId);
   if (player) {
-    player.isReady = true;
+    // Toggle the ready state
+    player.isReady = !player.isReady;
+    console.log(
+      `Player ${player.username} (${playerId}) in match ${matchId} is now ready: ${player.isReady}`
+    );
+  } else {
+    // This is a critical error. Throw it to be caught by sockets.js
+    console.error(
+      `setPlayerReady Error: Player with ID ${playerId} not found in match ${matchId}.`
+    );
+    throw new Error(`Player ${playerId} not found in this match.`);
   }
 
   // Check if all players are ready
@@ -31,11 +54,20 @@ async function setPlayerReady(matchId, playerId) {
     match.players.length === 2 && match.players.every((p) => p.isReady);
   if (allReady) {
     match.status = "countdown";
+    console.log(
+      `All players in match ${matchId} are ready. Starting countdown.`
+    );
+  } else {
+    // If a player un-readies, ensure the status is back to waiting
+    if (match.status === "countdown") {
+      match.status = "waiting";
+    }
   }
 
   await match.save();
   return match;
 }
+
 async function joinMatch(matchId, socketId, username) {
   const match = await Match.findOne({ matchId: matchId.toUpperCase() }); //find match from db
 
@@ -45,10 +77,15 @@ async function joinMatch(matchId, socketId, username) {
     throw new Error("This match has already started.");
 
   // add new player in the match
-  const player = { socketId, username, playerNumber: 2 };
+  const player = { socketId, username, playerNumber: 2, isReady: false };
   match.players.push(player);
-  match.status = "in-progress";
-  match.turn = match.players[0].socketId;
+
+  // BUG FIX: Do NOT change the status here. The game should remain in the 'waiting'
+  // state until both players have readied up.
+  // match.status = "in-progress";
+  // match.turn = match.players[0].socketId;
+
+  console.log(`${username} (${socketId}) joined match ${matchId}`);
   return match.save(); // save the db
 }
 

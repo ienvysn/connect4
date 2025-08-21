@@ -1,9 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
   const socket = io();
+
+  // --- State Management ---
   let currentMatch = null;
   let myPlayerId = null;
   let timerInterval = null;
 
+  // --- DOM Elements ---
   const boardElement = document.querySelector(".board");
   const p1Name = document.getElementById("player1-name"),
     p2Name = document.getElementById("player2-name");
@@ -21,23 +24,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const newGameBtn = document.getElementById("new-game-btn");
   const matchIdDisplay = document.getElementById("match-id-display");
 
+  // --- Initialization ---
   const urlParams = new URLSearchParams(window.location.search);
   const matchId = urlParams.get("matchId");
   if (!matchId) {
+    console.error("No Match ID found in URL");
     gameOverText.textContent = "Invalid Match ID.";
     gameOverOverlay.style.display = "flex";
     return;
   }
   matchIdDisplay.textContent = `Match ID: ${matchId}`;
+  console.log(`Game started for Match ID: ${matchId}`);
 
+  // --- Socket Event Handlers ---
   socket.on("connect", () => {
     myPlayerId = socket.id;
+    console.log(`Connected to server with socket ID: ${myPlayerId}`);
     socket.emit("player_ready", { matchId });
   });
 
   socket.on("message", (msg) => {
+    console.log("Received message from server:", msg);
     switch (msg.type) {
-      case "player_joined":
       case "game_state":
         currentMatch = msg.match;
         renderAll(currentMatch);
@@ -65,13 +73,19 @@ document.addEventListener("DOMContentLoaded", () => {
         renderAll(currentMatch);
         break;
       case "error":
+        console.error(`Server error: ${msg.error}`);
         alert(`Error: ${msg.error}`);
         break;
     }
   });
 
+  // --- Rendering ---
   function renderAll(match) {
-    if (!match) return;
+    if (!match) {
+      console.warn("RenderAll called with no match data.");
+      return;
+    }
+    console.log("Rendering all components with match data:", match);
     renderBoard(match);
     renderPlayerInfo(match);
     renderReadyStates(match);
@@ -81,17 +95,19 @@ document.addEventListener("DOMContentLoaded", () => {
     boardElement.innerHTML = "";
     const isMyTurn =
       match.turn === myPlayerId && match.status === "in-progress";
-    match.board.forEach((row) =>
+    match.board.forEach((row, rowIndex) =>
       row.forEach((cell, colIndex) => {
         const slot = document.createElement("div");
         slot.classList.add("slot");
         slot.dataset.column = colIndex;
-        if (cell !== 0) {
+        if (cell !== null && cell !== 0) {
+          // Check for null as well as 0
           const piece = document.createElement("div");
           piece.classList.add("piece");
           const player = match.players.find((p) => p.playerNumber === cell);
-          if (player)
+          if (player) {
             piece.classList.add(player.playerNumber === 1 ? "p1" : "p2");
+          }
           slot.appendChild(piece);
         }
         if (isMyTurn) slot.classList.add("my-turn-hover");
@@ -105,11 +121,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const p2 = match.players.find((p) => p.playerNumber === 2);
     p1Name.textContent = p1 ? p1.username : "Player 1";
     p2Name.textContent = p2 ? p2.username : "Waiting...";
-    p1Turn.classList.remove("current-turn", "waiting");
-    p2Turn.classList.remove("current-turn", "waiting");
+
+    if (p1Turn) p1Turn.classList.remove("current-turn", "waiting");
+    if (p2Turn) p2Turn.classList.remove("current-turn", "waiting");
+
     if (match.status === "in-progress" && match.turn) {
       const turnPlayer = match.players.find((p) => p.socketId === match.turn);
-      if (turnPlayer) {
+      if (turnPlayer && p1Turn && p2Turn) {
         (turnPlayer.playerNumber === 1 ? p1Turn : p2Turn).classList.add(
           "current-turn"
         );
@@ -118,8 +136,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
     } else {
-      p1Turn.classList.add("waiting");
-      p2Turn.classList.add("waiting");
+      if (p1Turn) p1Turn.classList.add("waiting");
+      if (p2Turn) p2Turn.classList.add("waiting");
     }
   }
 
@@ -127,12 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const p1 = match.players.find((p) => p.playerNumber === 1);
     const p2 = match.players.find((p) => p.playerNumber === 2);
 
-    // 1. Determine if the game is in the "Ready Up" phase.
-    const isReadyPhase = match.status === "in-progress" && p1 && p2;
-    console.log(match.status);
-    console.log(isReadyPhase);
-    // 2. Update Player 1's UI
-    if (p1) {
+    const isReadyPhase =
+      match.status === "waiting" && match.players.length === 2;
+
+    if (p1 && p1Indicator && p1ReadyBtn) {
       p1Indicator.className =
         "ready-indicator " + (p1.isReady ? "ready" : "not-ready");
       p1ReadyBtn.style.display = isReadyPhase ? "block" : "none";
@@ -140,20 +156,19 @@ document.addEventListener("DOMContentLoaded", () => {
       p1ReadyBtn.disabled = p1.isReady || p1.socketId !== myPlayerId;
     }
 
-    // 3. Update Player 2's UI
-    if (p2) {
+    if (p2 && p2Indicator && p2ReadyBtn) {
       p2Indicator.className =
         "ready-indicator " + (p2.isReady ? "ready" : "not-ready");
       p2ReadyBtn.style.display = isReadyPhase ? "block" : "none";
       p2ReadyBtn.textContent = p2.isReady ? "Ready!" : "Ready Up";
       p2ReadyBtn.disabled = p2.isReady || p2.socketId !== myPlayerId;
-    } else {
-      // If there is no Player 2, ensure their UI is in the default state.
+    } else if (p2Indicator && p2ReadyBtn) {
       p2Indicator.className = "ready-indicator not-ready";
       p2ReadyBtn.style.display = "none";
     }
   }
 
+  // --- Event Logic ---
   boardElement.addEventListener("click", (e) => {
     const slot = e.target.closest(".slot");
     if (
@@ -162,21 +177,26 @@ document.addEventListener("DOMContentLoaded", () => {
       currentMatch.turn === myPlayerId &&
       !currentMatch.winner
     ) {
+      const column = parseInt(slot.dataset.column);
+      console.log(`Player ${myPlayerId} making move in column ${column}`);
       socket.emit("make_move", {
         matchId,
-        column: parseInt(slot.dataset.column),
+        column: column,
       });
     }
   });
 
-  p1ReadyBtn.addEventListener("click", () =>
-    socket.emit("player_set_ready", { matchId })
-  );
-  p2ReadyBtn.addEventListener("click", () =>
-    socket.emit("player_set_ready", { matchId })
-  );
+  p1ReadyBtn.addEventListener("click", () => {
+    console.log("Player 1 clicked ready button.");
+    socket.emit("player_set_ready", { matchId });
+  });
+  p2ReadyBtn.addEventListener("click", () => {
+    console.log("Player 2 clicked ready button.");
+    socket.emit("player_set_ready", { matchId });
+  });
   newGameBtn.addEventListener("click", () => (window.location.href = "/"));
 
+  // --- Timers & Overlays ---
   function startTurnTimer(duration) {
     clearInterval(timerInterval);
     let timeLeft = duration;
@@ -205,12 +225,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showGameOver(winnerId, winnerUsername) {
     clearInterval(timerInterval);
-    gameOverText.textContent =
+    const message =
       winnerId === "draw"
         ? "It's a Draw!"
         : winnerId === myPlayerId
         ? "You Win!"
         : `${winnerUsername} Wins!`;
+    console.log(`Game over. Winner: ${winnerUsername} (${winnerId})`);
+    gameOverText.textContent = message;
     gameOverOverlay.style.display = "flex";
   }
 });
