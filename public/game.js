@@ -290,16 +290,29 @@ document.addEventListener("DOMContentLoaded", () => {
     gameOverOverlay.style.display = "flex";
 
     // --- Trigger Confetti ---
-    if (winnerId !== "draw" && winnerId === myPlayerId) {
-      const myConfetti = confetti.create(confettiCanvas, {
-        resize: true,
-        useWorker: true,
-      });
-      myConfetti({
-        particleCount: 150,
-        spread: 180,
-        origin: { y: 0.6 },
-      });
-    }
+    setTimeout(() => {
+      if (winnerId !== "draw" && winnerId === myPlayerId) {
+        const winningPlayer = currentMatch.players.find(
+          (p) => p.socketId === winnerId
+        );
+        if (!winningPlayer) return;
+
+        const isPlayer1 = winningPlayer.playerNumber === 1;
+        const originX = isPlayer1 ? 0.1 : 0.9;
+
+        const myConfetti = confetti.create(confettiCanvas, {
+          resize: true,
+          useWorker: true,
+        });
+
+        myConfetti({
+          particleCount: 200,
+          spread: 70,
+          origin: { x: originX, y: 0.6 },
+          angle: isPlayer1 ? 45 : 135,
+          colors: ["#c9afff", "#48d1cc", "#8a4fff", "#eae6f0"],
+        });
+      }
+    }, 100); // Delay confetti by 100ms
   }
 });
