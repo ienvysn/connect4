@@ -40,7 +40,10 @@ document.addEventListener("DOMContentLoaded", () => {
       copyToClipboard(msg.matchId);
     }
 
-    if (msg.type === "join_success") {
+    if (
+      msg.type === "join_success" ||
+      (msg.type === "game_state" && msg.match)
+    ) {
       window.location.href = `/game.html?matchId=${msg.match.matchId}`;
     }
 
