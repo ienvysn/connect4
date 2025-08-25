@@ -1,14 +1,19 @@
 const roomManager = require("./roomManager");
-const Match = require("./models/Match"); // Import the Match model
+const Match = require("./models/Match");
 
 function registerSocketHandlers(io, socket) {
+  console.log(`[Socket Connected] ID: ${socket.id}`);
+
   socket.on("create_match", async ({ username }) => {
+    console.log(
+      `[Event: create_match] Received from ${socket.id} for user ${username}`
+    );
     try {
       const match = await roomManager.createMatch(socket.id, username);
       socket.join(match.matchId);
       socket.emit("message", { type: "match_created", matchId: match.matchId });
     } catch (error) {
-      console.error("Error creating match:", error);
+      console.error("[Event: create_match] Error:", error);
       socket.emit("message", {
         type: "error",
         error: "Could not create match.",
@@ -17,37 +22,51 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("join_match", async ({ matchId, username }) => {
+    console.log(
+      `[Event: join_match] Received from ${socket.id} for user ${username} to match ${matchId}`
+    );
     try {
       const match = await roomManager.joinMatch(matchId, socket.id, username);
       socket.join(matchId);
-      // Notify everyone in the room (both players) of the new state
       io.to(matchId).emit("message", { type: "game_state", match });
     } catch (error) {
-      console.error(`Error joining match ${matchId}:`, error);
+      console.error(
+        `[Event: join_match] Error joining match ${matchId}:`,
+        error
+      );
       socket.emit("message", { type: "error", error: error.message });
     }
   });
 
   socket.on("player_ready", async ({ matchId }) => {
+    console.log(
+      `[Event: player_ready] Received from ${socket.id} for match ${matchId}`
+    );
     try {
       let match = await Match.findOne({ matchId });
       if (match) {
         socket.join(matchId);
 
-        // and update their socket ID to the new one.
-        const player = match.players.find(
-          (p) =>
-            (p.socketId !== socket.id && match.players.length < 2) ||
-            !io.sockets.sockets.get(p.socketId)
+        // Find a player in the match whose socket is no longer active on the server.
+        // This handles the redirect case where a player gets a new socket ID.
+        const stalePlayer = match.players.find(
+          (p) => !io.sockets.sockets.get(p.socketId) && p.socketId !== socket.id
         );
 
-        if (player && player.socketId !== socket.id) {
+        if (stalePlayer) {
           console.log(
-            `Player ${player.username} reconnected. Updating socket ID from ${player.socketId} to ${socket.id}`
+            `[Reconnect] Found stale player ${stalePlayer.username} in match ${matchId}. Updating socket ID from ${stalePlayer.socketId} to ${socket.id}`
           );
-          player.socketId = socket.id;
+          stalePlayer.socketId = socket.id;
+          stalePlayer.status = "online";
+          stalePlayer.disconnectedAt = null;
           await match.save();
-          match = await Match.findOne({ matchId }); // Re-fetch the match to get the latest data
+          match = await Match.findOne({ matchId }); // Re-fetch to get the latest state
+
+          // If this was a mid-game reconnect, notify the other player.
+          if (match.players.length === 2 && match.status === "in-progress") {
+            io.to(matchId).emit("message", { type: "opponent_reconnected" });
+          }
         }
 
         io.to(matchId).emit("message", { type: "game_state", match });
@@ -55,7 +74,10 @@ function registerSocketHandlers(io, socket) {
         socket.emit("message", { type: "error", error: "Match not found." });
       }
     } catch (error) {
-      console.error(`Error on player_ready for match ${matchId}:`, error);
+      console.error(
+        `[Event: player_ready] Error on player_ready for match ${matchId}:`,
+        error
+      );
       socket.emit("message", {
         type: "error",
         error: "Could not retrieve match data.",
@@ -64,6 +86,9 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("player_set_ready", async ({ matchId }) => {
+    console.log(
+      `[Event: player_set_ready] Received from ${socket.id} for match ${matchId}`
+    );
     try {
       let match = await roomManager.setPlayerReady(matchId, socket.id);
 
@@ -77,7 +102,7 @@ function registerSocketHandlers(io, socket) {
 
         setTimeout(async () => {
           const finalMatch = await Match.findOne({ matchId });
-          if (!finalMatch || finalMatch.status !== "countdown") return; // Prevent race conditions
+          if (!finalMatch || finalMatch.status !== "countdown") return;
 
           finalMatch.status = "in-progress";
           finalMatch.turn = finalMatch.players[0].socketId;
@@ -91,9 +116,8 @@ function registerSocketHandlers(io, socket) {
         }, 5000);
       }
     } catch (error) {
-      // More detailed server-side logging
       console.error(
-        `Error setting player ready for ${socket.id} in match ${matchId}:`,
+        `[Event: player_set_ready] Error for ${socket.id} in match ${matchId}:`,
         error
       );
       socket.emit("message", {
@@ -104,6 +128,9 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("make_move", async ({ matchId, column }) => {
+    console.log(
+      `[Event: make_move] Received from ${socket.id} for match ${matchId}, column ${column}`
+    );
     try {
       const match = await roomManager.applyMove(matchId, socket.id, column);
       if (!match) {
@@ -132,13 +159,21 @@ function registerSocketHandlers(io, socket) {
         roomManager.startTurnTimer(io, matchId);
       }
     } catch (error) {
-      console.error(`Error on make_move for match ${matchId}:`, error);
+      console.error(`[Event: make_move] Error for match ${matchId}:`, error);
       socket.emit("message", { type: "error", error: error.message });
     }
   });
 
+  socket.on("resign", ({ matchId }) => {
+    console.log(
+      `[Event: resign] Received from ${socket.id} for match ${matchId}`
+    );
+    roomManager.handleResignation(io, matchId, socket.id);
+  });
+
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log(`[Socket Disconnected] ID: ${socket.id}`);
+    roomManager.handleDisconnect(io, socket.id);
   });
 }
 

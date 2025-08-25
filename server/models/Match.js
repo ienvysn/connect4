@@ -6,6 +6,13 @@ const playerSchema = new mongoose.Schema({
   username: { type: String, required: true },
   playerNumber: { type: Number, enum: [1, 2], required: true },
   isReady: { type: Boolean, default: false },
+  status: {
+    type: String,
+    enum: ["online", "offline"],
+    default: "online",
+  },
+  disconnectedAt: { type: Date, default: null },
+  missedTurnCount: { type: Number, default: 0 },
 });
 
 // Defines the main structure for a game match
@@ -20,6 +27,7 @@ const matchSchema = new mongoose.Schema({
     enum: ["waiting", "countdown", "in-progress", "finished"],
     default: "waiting",
   },
+  reasonForWin: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

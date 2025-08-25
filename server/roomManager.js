@@ -3,6 +3,12 @@ const Match = require("./models/Match");
 
 const timers = {};
 const TURN_DURATION = 30000;
+const RECONNECT_DURATION = 45000;
+
+// --- Helper function for logging ---
+function log(matchId, message) {
+  console.log(`[Match: ${matchId}] ${message}`);
+}
 
 async function createMatch(socketId, username) {
   const matchId = Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -14,53 +20,41 @@ async function createMatch(socketId, username) {
     board: gameEngine.initBoard(),
     status: "waiting",
   });
-  console.log(`Match ${matchId} created by ${username} (${socketId})`);
-  return newMatch.save(); // save the db
+  log(matchId, `Match created by ${username} (${socketId})`);
+  return newMatch.save();
 }
 
 async function setPlayerReady(matchId, playerId) {
-  console.log(
-    `Attempting to set ready for player ${playerId} in match ${matchId}`
-  );
+  log(matchId, `Attempting to set ready for player ${playerId}`);
   const match = await Match.findOne({ matchId });
   if (!match) {
-    console.error(`setPlayerReady Error: Match ${matchId} not found.`);
+    console.error(`[Match: ${matchId}] setPlayerReady Error: Match not found.`);
     throw new Error("Match not found.");
   }
 
-  // For debugging: Log the players currently in the match from the database
-  console.log(
-    `Found match ${matchId}. Players in DB:`,
-    JSON.stringify(match.players.map((p) => p.socketId))
-  );
-
   const player = match.players.find((p) => p.socketId === playerId);
   if (player) {
-    // Toggle the ready state
     player.isReady = !player.isReady;
-    console.log(
-      `Player ${player.username} (${playerId}) in match ${matchId} is now ready: ${player.isReady}`
+    log(
+      matchId,
+      `Player ${player.username} (${playerId}) is now ready: ${player.isReady}`
     );
   } else {
-    // This is a critical error. Throw it to be caught by sockets.js
     console.error(
-      `setPlayerReady Error: Player with ID ${playerId} not found in match ${matchId}.`
+      `[Match: ${matchId}] setPlayerReady Error: Player with ID ${playerId} not found.`
     );
     throw new Error(`Player ${playerId} not found in this match.`);
   }
 
-  // Check if all players are ready
   const allReady =
     match.players.length === 2 && match.players.every((p) => p.isReady);
   if (allReady) {
     match.status = "countdown";
-    console.log(
-      `All players in match ${matchId} are ready. Starting countdown.`
-    );
+    log(matchId, `All players are ready. Status changed to 'countdown'.`);
   } else {
-    // If a player un-readies, ensure the status is back to waiting
     if (match.status === "countdown") {
       match.status = "waiting";
+      log(matchId, `A player un-readied. Status reverted to 'waiting'.`);
     }
   }
 
@@ -69,24 +63,18 @@ async function setPlayerReady(matchId, playerId) {
 }
 
 async function joinMatch(matchId, socketId, username) {
-  const match = await Match.findOne({ matchId: matchId.toUpperCase() }); //find match from db
+  const match = await Match.findOne({ matchId: matchId.toUpperCase() });
 
   if (!match) throw new Error("Match Not found");
   if (match.players.length >= 2) throw new Error("Match Full");
   if (match.status !== "waiting")
     throw new Error("This match has already started.");
 
-  // add new player in the match
   const player = { socketId, username, playerNumber: 2, isReady: false };
   match.players.push(player);
 
-  // BUG FIX: Do NOT change the status here. The game should remain in the 'waiting'
-  // state until both players have readied up.
-  // match.status = "in-progress";
-  // match.turn = match.players[0].socketId;
-
-  console.log(`${username} (${socketId}) joined match ${matchId}`);
-  return match.save(); // save the db
+  log(match.matchId, `${username} (${socketId}) joined match.`);
+  return match.save();
 }
 
 async function applyMove(matchId, playerId, column) {
@@ -98,17 +86,21 @@ async function applyMove(matchId, playerId, column) {
   }
 
   const player = match.players.find((p) => p.socketId === playerId);
+  log(
+    matchId,
+    `Player ${player.username} made a move in column ${column}. Resetting missed turn count.`
+  );
+  player.missedTurnCount = 0;
   const moveResult = gameEngine.applyMove(
     match.board,
     player.playerNumber,
     column
   );
 
-  if (!moveResult) return null; // Column is full, invalid move
+  if (!moveResult) return null;
 
-  match.board = moveResult.board; // Update board state
+  match.board = moveResult.board;
 
-  // Check for win or draw
   if (
     gameEngine.checkWin(
       match.board,
@@ -119,28 +111,29 @@ async function applyMove(matchId, playerId, column) {
   ) {
     match.winner = playerId;
     match.status = "finished";
+    match.reasonForWin = "victory";
+    log(matchId, `Game over. Winner: ${player.username} by victory.`);
   } else if (gameEngine.isDraw(match.board)) {
     match.winner = "draw";
     match.status = "finished";
+    match.reasonForWin = "draw";
+    log(matchId, `Game over. It's a draw.`);
   } else {
-    // Switch turn to the other player
     const nextPlayer = match.players.find((p) => p.socketId !== playerId);
     match.turn = nextPlayer.socketId;
+    log(matchId, `Turn switched to ${nextPlayer.username}.`);
   }
 
-  // Mark the board as modified for Mongoose to save it correctly
   match.markModified("board");
   await match.save();
   return match;
 }
 
 function startTurnTimer(io, matchId) {
-  // Clear any previous timer for this match to prevent duplicates
   if (timers[matchId]) {
     clearTimeout(timers[matchId]);
   }
-
-  // Notify  countdown to both
+  log(matchId, `Starting 30s turn timer.`);
   io.to(matchId).emit("message", {
     type: "timer_start",
     duration: TURN_DURATION / 1000,
@@ -150,39 +143,163 @@ function startTurnTimer(io, matchId) {
     try {
       const match = await Match.findOne({ matchId });
 
-      if (!match || match.status !== "in-progress") return;
+      if (!match || match.status !== "in-progress") {
+        log(
+          matchId,
+          `Turn timer expired, but match is no longer in progress. Aborting.`
+        );
+        return;
+      }
 
-      console.log(`Timer expired for ${match.turn} in match ${matchId}`);
+      const currentTurnPlayer = match.players.find(
+        (p) => p.socketId === match.turn
+      );
+      currentTurnPlayer.missedTurnCount++;
+      log(
+        matchId,
+        `Timer expired for ${currentTurnPlayer.username}. Missed turn count: ${currentTurnPlayer.missedTurnCount}.`
+      );
 
-      // Switch turn to the other player
-      const currentTurnPlayerId = match.turn;
+      if (currentTurnPlayer.missedTurnCount >= 2) {
+        const winner = match.players.find((p) => p.socketId !== match.turn);
+        match.winner = winner.socketId;
+        match.status = "finished";
+        match.reasonForWin = "missed_turns";
+        await match.save();
+
+        log(
+          matchId,
+          `Game over. ${winner.username} wins due to opponent missing 2 turns.`
+        );
+        io.to(matchId).emit("message", {
+          type: "game_over",
+          winner: winner.socketId,
+          winnerUsername: winner.username,
+          board: match.board, // <-- FIX: Added board state
+        });
+        stopTurnTimer(matchId);
+        return;
+      }
+
       const nextPlayer = match.players.find(
-        (p) => p.socketId !== currentTurnPlayerId
+        (p) => p.socketId !== currentTurnPlayer.socketId
       );
       match.turn = nextPlayer.socketId;
       await match.save();
 
-      // Notify players that the turn was switched due to timeout
       io.to(matchId).emit("message", {
         type: "turn_switch_timer",
         board: match.board,
         nextTurn: match.turn,
       });
 
-      // Start the timer for the next player's turn
       startTurnTimer(io, matchId);
     } catch (error) {
-      console.error(`Error in timer for match ${matchId}:`, error);
+      console.error(`[Match: ${matchId}] Error in turn timer:`, error);
     }
   }, TURN_DURATION);
 }
 
 function stopTurnTimer(matchId) {
   if (timers[matchId]) {
+    log(matchId, `Stopping turn timer.`);
     clearTimeout(timers[matchId]);
     delete timers[matchId];
   }
 }
+
+async function handleDisconnect(io, socketId) {
+  const match = await Match.findOne({
+    "players.socketId": socketId,
+    status: "in-progress",
+  });
+  if (!match) {
+    console.log(
+      `[Disconnect] Socket ${socketId} disconnected, but was not in an active match.`
+    );
+    return;
+  }
+
+  const player = match.players.find((p) => p.socketId === socketId);
+  if (player) {
+    player.status = "offline";
+    player.disconnectedAt = new Date();
+    await match.save();
+    log(
+      match.matchId,
+      `Player ${player.username} disconnected. Starting 45s reconnect timer.`
+    );
+
+    setTimeout(() => {
+      log(
+        match.matchId,
+        `3s debounce passed. Notifying opponent of disconnect.`
+      );
+      io.to(match.matchId).emit("message", {
+        type: "opponent_disconnected",
+      });
+    }, 3000);
+
+    setTimeout(async () => {
+      const updatedMatch = await Match.findOne({ matchId: match.matchId });
+      const disconnectedPlayer = updatedMatch.players.find(
+        (p) => p.socketId === socketId
+      );
+
+      if (disconnectedPlayer && disconnectedPlayer.status === "offline") {
+        const winner = updatedMatch.players.find(
+          (p) => p.socketId !== socketId
+        );
+        updatedMatch.winner = winner.socketId;
+        updatedMatch.status = "finished";
+        updatedMatch.reasonForWin = "disconnect";
+        await updatedMatch.save();
+
+        log(
+          match.matchId,
+          `Reconnect timer expired. ${winner.username} wins by opponent disconnect.`
+        );
+        io.to(updatedMatch.matchId).emit("message", {
+          type: "game_over",
+          winner: winner.socketId,
+          winnerUsername: winner.username,
+          board: updatedMatch.board, // <-- FIX: Added board state
+        });
+        stopTurnTimer(updatedMatch.matchId);
+      } else {
+        log(
+          match.matchId,
+          `Reconnect timer expired, but player ${disconnectedPlayer.username} has already reconnected. No action taken.`
+        );
+      }
+    }, RECONNECT_DURATION);
+  }
+}
+
+async function handleResignation(io, matchId, playerId) {
+  const match = await Match.findOne({ matchId });
+  if (!match) return;
+
+  const resigningPlayer = match.players.find((p) => p.socketId === playerId);
+  const winner = match.players.find((p) => p.socketId !== playerId);
+  match.winner = winner.socketId;
+  match.status = "finished";
+  match.reasonForWin = "resignation";
+  await match.save();
+
+  log(
+    matchId,
+    `Player ${resigningPlayer.username} resigned. ${winner.username} wins.`
+  );
+  io.to(matchId).emit("message", {
+    type: "game_over",
+    winner: winner.socketId,
+    winnerUsername: winner.username,
+    board: match.board, // <-- FIX: Added board state
+  });
+  stopTurnTimer(matchId);
+}
+
 module.exports = {
   createMatch,
   joinMatch,
@@ -190,4 +307,6 @@ module.exports = {
   applyMove,
   startTurnTimer,
   stopTurnTimer,
+  handleDisconnect,
+  handleResignation,
 };

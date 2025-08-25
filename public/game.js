@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentMatch = null;
   let myPlayerId = null;
   let timerInterval = null;
-  let isBoardRendered = false; // Flag to check if the board slots have been created
+  let isBoardRendered = false;
 
   // --- DOM Elements ---
   const boardElement = document.querySelector(".board");
@@ -17,8 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
     p2Status = document.getElementById("player2-status");
   const p1ReadyBtn = document.getElementById("p1-ready-btn"),
     p2ReadyBtn = document.getElementById("p2-ready-btn");
-  const p1Indicator = document.querySelector("#player1-card .ready-indicator"),
-    p2Indicator = document.querySelector("#player2-card .ready-indicator");
   const timerSpan = document.getElementById("timer-span");
   const turnTimerBar = document.getElementById("turn-timer-bar");
   const gameOverOverlay = document.getElementById("game-status-overlay"),
@@ -27,7 +25,12 @@ document.addEventListener("DOMContentLoaded", () => {
     countdownText = document.getElementById("countdown-text");
   const newGameBtn = document.getElementById("new-game-btn");
   const matchIdDisplay = document.getElementById("match-id-display");
-  const confettiCanvas = document.getElementById("confetti-canvas"); // Get the confetti canvas
+  const confettiCanvas = document.getElementById("confetti-canvas");
+  const toastContainer = document.getElementById("toast-container");
+  const resignBtn = document.getElementById("resign-btn");
+  const resignModal = document.getElementById("resign-modal");
+  const confirmResignBtn = document.getElementById("confirm-resign-btn");
+  const cancelResignBtn = document.getElementById("cancel-resign-btn");
 
   // --- Initialization ---
   const urlParams = new URLSearchParams(window.location.search);
@@ -39,17 +42,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
   matchIdDisplay.textContent = `Match ID: ${matchId}`;
-  console.log(`Game started for Match ID: ${matchId}`);
+  console.log(`[Game Client] Initialized for Match ID: ${matchId}`);
 
   // --- Socket Event Handlers ---
   socket.on("connect", () => {
     myPlayerId = socket.id;
-    console.log(`Connected to server with socket ID: ${myPlayerId}`);
+    console.log(
+      `[Game Client] Connected to server with socket ID: ${myPlayerId}. Emitting player_ready.`
+    );
     socket.emit("player_ready", { matchId });
   });
 
   socket.on("message", (msg) => {
-    console.log("Received message from server:", msg);
+    console.log("[Game Client] Received message from server:", msg);
     switch (msg.type) {
       case "game_state":
         currentMatch = msg.match;
@@ -77,8 +82,14 @@ document.addEventListener("DOMContentLoaded", () => {
         currentMatch.turn = msg.nextTurn;
         renderAll(currentMatch);
         break;
+      case "opponent_disconnected":
+        showToast("Your opponent has disconnected.");
+        break;
+      case "opponent_reconnected":
+        showToast("Your opponent has reconnected.");
+        break;
       case "error":
-        console.error(`Server error: ${msg.error}`);
+        console.error(`[Game Client] Server error: ${msg.error}`);
         alert(`Error: ${msg.error}`);
         break;
     }
@@ -87,10 +98,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Rendering ---
   function renderAll(match) {
     if (!match) {
-      console.warn("RenderAll called with no match data.");
+      console.warn("[Game Client] renderAll called with no match data.");
       return;
     }
-    console.log("Rendering all components with match data:", match);
+    console.log(
+      "[Game Client] Rendering all components with match data:",
+      match
+    );
     renderBoard(match);
     renderPlayerInfo(match);
     renderReadyStates(match);
@@ -177,32 +191,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderReadyStates(match) {
-    const p1 = match.players.find((p) => p.playerNumber === 1);
-    const p2 = match.players.find((p) => p.playerNumber === 2);
     const isPreGameLobby = match.status === "waiting";
 
+    const p1 = match.players.find((p) => p.playerNumber === 1);
     if (p1 && p1ReadyBtn) {
       p1ReadyBtn.style.display =
         isPreGameLobby && match.players.length === 2 ? "block" : "none";
       p1ReadyBtn.textContent = p1.isReady ? "Ready!" : "Ready Up";
       p1ReadyBtn.disabled = p1.socketId !== myPlayerId;
-      if (p1Indicator) {
-        p1Indicator.className =
-          "ready-indicator " + (p1.isReady ? "ready" : "not-ready");
-        p1Card.classList.toggle("ready", p1.isReady);
-      }
     }
 
+    const p2 = match.players.find((p) => p.playerNumber === 2);
     if (p2 && p2ReadyBtn) {
       p2ReadyBtn.style.display =
         isPreGameLobby && match.players.length === 2 ? "block" : "none";
       p2ReadyBtn.textContent = p2.isReady ? "Ready!" : "Ready Up";
       p2ReadyBtn.disabled = p2.socketId !== myPlayerId;
-      if (p2Indicator) {
-        p2Indicator.className =
-          "ready-indicator " + (p2.isReady ? "ready" : "not-ready");
-        p2Card.classList.toggle("ready", p2.isReady);
-      }
     } else if (p2ReadyBtn) {
       p2ReadyBtn.style.display = "none";
     }
@@ -218,6 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
       !currentMatch.winner
     ) {
       const column = parseInt(slot.dataset.column);
+      console.log(
+        `[Game Client] Clicked column ${column}. Emitting make_move.`
+      );
       socket.emit("make_move", {
         matchId,
         column: column,
@@ -226,31 +233,44 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   p1ReadyBtn.addEventListener("click", () => {
+    console.log(
+      "[Game Client] Clicked Player 1 Ready button. Emitting player_set_ready."
+    );
     socket.emit("player_set_ready", { matchId });
   });
   p2ReadyBtn.addEventListener("click", () => {
+    console.log(
+      "[Game Client] Clicked Player 2 Ready button. Emitting player_set_ready."
+    );
     socket.emit("player_set_ready", { matchId });
   });
   newGameBtn.addEventListener("click", () => (window.location.href = "/"));
+
+  resignBtn.addEventListener("click", () => {
+    console.log("[Game Client] Clicked Resign button. Opening modal.");
+    resignModal.style.display = "flex";
+  });
+  cancelResignBtn.addEventListener("click", () => {
+    console.log("[Game Client] Canceled resignation.");
+    resignModal.style.display = "none";
+  });
+  confirmResignBtn.addEventListener("click", () => {
+    console.log("[Game Client] Confirmed resignation. Emitting resign.");
+    socket.emit("resign", { matchId });
+    resignModal.style.display = "none";
+  });
 
   // --- Timers & Overlays ---
   function startTurnTimer(duration) {
     clearInterval(timerInterval);
     let timeLeft = duration;
 
-    // 1. Reset the bar instantly to full width without transition
     turnTimerBar.style.transition = "none";
     turnTimerBar.style.width = "100%";
-
-    // 2. Force the browser to apply the above style change
     void turnTimerBar.offsetWidth;
-
-    // 3. Set the transition and the final state (0% width)
-    // The browser will now animate correctly from 100% to 0% over the duration.
     turnTimerBar.style.transition = `width ${duration}s linear`;
     turnTimerBar.style.width = "0%";
 
-    // This interval is now ONLY for updating the number text.
     timerSpan.textContent = `00:${String(timeLeft).padStart(2, "0")}`;
     timerInterval = setInterval(() => {
       timeLeft--;
@@ -289,30 +309,35 @@ document.addEventListener("DOMContentLoaded", () => {
     gameOverText.textContent = message;
     gameOverOverlay.style.display = "flex";
 
-    // --- Trigger Confetti ---
+    if (winnerId !== "draw" && winnerId === myPlayerId) {
+      const myConfetti = confetti.create(confettiCanvas, {
+        resize: true,
+        useWorker: true,
+      });
+      myConfetti({
+        particleCount: 150,
+        spread: 180,
+        origin: { y: 0.6 },
+      });
+    }
+  }
+
+  function showToast(message) {
+    console.log(`[Game Client] Showing toast: "${message}"`);
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
     setTimeout(() => {
-      if (winnerId !== "draw" && winnerId === myPlayerId) {
-        const winningPlayer = currentMatch.players.find(
-          (p) => p.socketId === winnerId
-        );
-        if (!winningPlayer) return;
+      toast.classList.add("show");
+    }, 100);
 
-        const isPlayer1 = winningPlayer.playerNumber === 1;
-        const originX = isPlayer1 ? 0.1 : 0.9;
-
-        const myConfetti = confetti.create(confettiCanvas, {
-          resize: true,
-          useWorker: true,
-        });
-
-        myConfetti({
-          particleCount: 200,
-          spread: 70,
-          origin: { x: originX, y: 0.6 },
-          angle: isPlayer1 ? 45 : 135,
-          colors: ["#c9afff", "#48d1cc", "#8a4fff", "#eae6f0"],
-        });
-      }
-    }, 100); // Delay confetti by 100ms
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => {
+        toast.remove();
+      }, 500);
+    }, 5000);
   }
 });
