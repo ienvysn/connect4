@@ -2,7 +2,7 @@ const gameEngine = require("./gameEngine");
 const Match = require("./models/Match");
 
 const timers = {};
-const TURN_DURATION = 30000;
+const TURN_DURATION = 15000;
 const RECONNECT_DURATION = 45000;
 
 // --- Helper function for logging ---
@@ -133,7 +133,7 @@ function startTurnTimer(io, matchId) {
   if (timers[matchId]) {
     clearTimeout(timers[matchId]);
   }
-  log(matchId, `Starting 30s turn timer.`);
+  log(matchId, `Starting 15s turn timer.`);
   io.to(matchId).emit("message", {
     type: "timer_start",
     duration: TURN_DURATION / 1000,

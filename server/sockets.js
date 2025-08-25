@@ -105,7 +105,7 @@ function registerSocketHandlers(io, socket) {
       if (match.status === "countdown") {
         io.to(matchId).emit("message", {
           type: "countdown_start",
-          duration: 5,
+          duration: 3,
         });
 
         setTimeout(async () => {
@@ -121,7 +121,7 @@ function registerSocketHandlers(io, socket) {
             match: finalMatch,
           });
           roomManager.startTurnTimer(io, matchId);
-        }, 5000);
+        }, 3000);
       }
     } catch (error) {
       console.error(

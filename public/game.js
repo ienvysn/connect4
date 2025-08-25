@@ -32,6 +32,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const confirmResignBtn = document.getElementById("confirm-resign-btn");
   const cancelResignBtn = document.getElementById("cancel-resign-btn");
 
+  // --- Audio Elements ---
+  const soundDrop = document.getElementById("sound-drop");
+  const soundWin = document.getElementById("sound-win");
+  const soundLose = document.getElementById("sound-lose");
+  const soundTurn = document.getElementById("sound-turn");
+  const soundReadyToggle = document.getElementById("sound-ready-toggle");
+  const soundClock = document.getElementById("sound-clock");
+  const soundCountdown = document.getElementById("sound-countdown");
+
+  // --- Sound Helper Functions ---
+  function playSound(soundElement) {
+    if (soundElement) {
+      soundElement.currentTime = 0;
+      soundElement
+        .play()
+        .catch((e) => console.error("Error playing sound:", e));
+    }
+  }
+
+  function stopSound(soundElement) {
+    if (soundElement) {
+      soundElement.pause();
+      soundElement.currentTime = 0;
+    }
+  }
+
   // --- Initialization ---
   const urlParams = new URLSearchParams(window.location.search);
   const matchId = urlParams.get("matchId");
@@ -57,15 +83,28 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[Game Client] Received message from server:", msg);
     switch (msg.type) {
       case "game_state":
+        if (
+          currentMatch &&
+          currentMatch.turn !== msg.match.turn &&
+          msg.match.turn === myPlayerId
+        ) {
+          playSound(soundTurn);
+        }
         currentMatch = msg.match;
         renderAll(currentMatch);
         break;
       case "board_update":
+        stopSound(soundClock);
+        playSound(soundDrop);
+        if (msg.nextTurn === myPlayerId) {
+          playSound(soundTurn);
+        }
         currentMatch.board = msg.board;
         currentMatch.turn = msg.nextTurn;
         renderAll(currentMatch);
         break;
       case "game_over":
+        stopSound(soundClock);
         currentMatch.board = msg.board;
         currentMatch.winner = msg.winner;
         renderAll(currentMatch);
@@ -78,6 +117,9 @@ document.addEventListener("DOMContentLoaded", () => {
         startCountdown(msg.duration);
         break;
       case "turn_switch_timer":
+        if (msg.nextTurn === myPlayerId) {
+          playSound(soundTurn);
+        }
         currentMatch.board = msg.board;
         currentMatch.turn = msg.nextTurn;
         renderAll(currentMatch);
@@ -233,12 +275,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   p1ReadyBtn.addEventListener("click", () => {
+    playSound(soundReadyToggle);
     console.log(
       "[Game Client] Clicked Player 1 Ready button. Emitting player_set_ready."
     );
     socket.emit("player_set_ready", { matchId });
   });
   p2ReadyBtn.addEventListener("click", () => {
+    playSound(soundReadyToggle);
     console.log(
       "[Game Client] Clicked Player 2 Ready button. Emitting player_set_ready."
     );
@@ -263,6 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Timers & Overlays ---
   function startTurnTimer(duration) {
     clearInterval(timerInterval);
+    playSound(soundClock); // Start clock sound
     let timeLeft = duration;
 
     turnTimerBar.style.transition = "none";
@@ -277,12 +322,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (timeLeft >= 0) {
         timerSpan.textContent = `00:${String(timeLeft).padStart(2, "0")}`;
       } else {
+        stopSound(soundClock); // Stop clock sound
         clearInterval(timerInterval);
       }
     }, 1000);
   }
 
   function startCountdown(duration) {
+    playSound(soundCountdown);
     countdownOverlay.style.display = "flex";
     let timeLeft = duration;
     countdownText.textContent = `Game starting in ${timeLeft}`;
@@ -298,18 +345,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showGameOver(winnerId, winnerUsername) {
     clearInterval(timerInterval);
+    stopSound(soundClock); // Stop clock sound on game over
     turnTimerBar.style.width = "0%";
-    const message =
-      winnerId === "draw"
-        ? "It's a Draw!"
-        : winnerId === myPlayerId
-        ? "You Win!"
-        : `${winnerUsername} Wins!`;
+    const isWinner = winnerId === myPlayerId;
+    const isDraw = winnerId === "draw";
+
+    if (isWinner) {
+      playSound(soundWin);
+    } else {
+      playSound(soundLose);
+    }
+
+    const message = isDraw
+      ? "It's a Draw!"
+      : isWinner
+      ? "You Win!"
+      : `${winnerUsername} Wins!`;
 
     gameOverText.textContent = message;
     gameOverOverlay.style.display = "flex";
 
-    if (winnerId !== "draw" && winnerId === myPlayerId) {
+    if (isWinner) {
       const myConfetti = confetti.create(confettiCanvas, {
         resize: true,
         useWorker: true,
