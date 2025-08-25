@@ -52,6 +52,11 @@ body {
   font-weight: 500;
   color: var(--text-muted);
 }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
 .timer {
   display: flex;
   align-items: center;
@@ -286,6 +291,24 @@ body {
 .btn-secondary {
   background-color: var(--board-bg);
   border-color: var(--border-color);
+}
+.btn-subtle {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-subtle:hover {
+  background-color: var(--board-bg);
+  border-color: var(--text-muted);
+  color: var(--text-color);
+}
+.btn-subtle svg {
+  width: 18px;
+  height: 18px;
 }
 
 @keyframes fadeIn {

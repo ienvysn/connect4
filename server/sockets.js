@@ -57,6 +57,14 @@ function registerSocketHandlers(io, socket) {
           console.log(
             `[Reconnect] Found stale player ${stalePlayer.username} in match ${matchId}. Updating socket ID from ${stalePlayer.socketId} to ${socket.id}`
           );
+
+          if (match.turn === stalePlayer.socketId) {
+            console.log(
+              `[Reconnect] It was the stale player's turn. Updating match.turn to the new socket ID.`
+            );
+            match.turn = socket.id;
+          }
+
           stalePlayer.socketId = socket.id;
           stalePlayer.status = "online";
           stalePlayer.disconnectedAt = null;

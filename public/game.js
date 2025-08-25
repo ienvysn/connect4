@@ -257,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
   confirmResignBtn.addEventListener("click", () => {
     console.log("[Game Client] Confirmed resignation. Emitting resign.");
     socket.emit("resign", { matchId });
-    resignModal.style.display = "none";
+    window.location.href = "/";
   });
 
   // --- Timers & Overlays ---

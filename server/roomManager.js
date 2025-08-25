@@ -242,13 +242,13 @@ async function handleDisconnect(io, socketId) {
 
     setTimeout(async () => {
       const updatedMatch = await Match.findOne({ matchId: match.matchId });
-      const disconnectedPlayer = updatedMatch.players.find(
-        (p) => p.socketId === socketId
+      const stillOfflinePlayer = updatedMatch.players.find(
+        (p) => p.status === "offline"
       );
 
-      if (disconnectedPlayer && disconnectedPlayer.status === "offline") {
+      if (stillOfflinePlayer) {
         const winner = updatedMatch.players.find(
-          (p) => p.socketId !== socketId
+          (p) => p.socketId !== stillOfflinePlayer.socketId
         );
         updatedMatch.winner = winner.socketId;
         updatedMatch.status = "finished";
@@ -257,19 +257,19 @@ async function handleDisconnect(io, socketId) {
 
         log(
           match.matchId,
-          `Reconnect timer expired. ${winner.username} wins by opponent disconnect.`
+          `Reconnect timer expired for ${stillOfflinePlayer.username}. ${winner.username} wins by opponent disconnect.`
         );
         io.to(updatedMatch.matchId).emit("message", {
           type: "game_over",
           winner: winner.socketId,
           winnerUsername: winner.username,
-          board: updatedMatch.board, // <-- FIX: Added board state
+          board: updatedMatch.board,
         });
         stopTurnTimer(updatedMatch.matchId);
       } else {
         log(
           match.matchId,
-          `Reconnect timer expired, but player ${disconnectedPlayer.username} has already reconnected. No action taken.`
+          `Reconnect timer expired, but player has already reconnected. No action taken.`
         );
       }
     }, RECONNECT_DURATION);

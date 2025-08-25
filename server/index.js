@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const rateLimit = require("express-rate-limit");
 const MONGO_URI = "mongodb://localhost:27017/connect4";
 
 mongoose
@@ -14,6 +15,13 @@ mongoose
   .then(() => console.log("Successfully connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 75,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.get("/", (req, res) => {
