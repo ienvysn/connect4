@@ -171,8 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
       row.forEach((cell, colIndex) => {
         const slotIndex = rowIndex * 7 + colIndex;
         const slot = boardElement.children[slotIndex];
-        const hasPiece = slot.hasChildNodes();
-        if (cell !== null && !hasPiece) {
+
+        slot.innerHTML = "";
+
+        if (cell !== null) {
           const piece = document.createElement("div");
           piece.classList.add("piece");
           const player = match.players.find((p) => p.playerNumber === cell);
@@ -181,6 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           slot.appendChild(piece);
         }
+
+        // 3. Update the hover effect
         if (isMyTurn) {
           slot.classList.add("my-turn-hover");
         } else {

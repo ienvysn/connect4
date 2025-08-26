@@ -134,7 +134,7 @@ async function applyMove(io, matchId, playerId, column) {
     });
     if (match.isAiMatch) stopTurnTimer(matchId);
 
-    const thinkTime = Math.random() * 1500 + 500;
+    const thinkTime = Math.random() * 5000 + 3000;
     setTimeout(async () => {
       try {
         const currentMatch = await Match.findOne({ matchId });
