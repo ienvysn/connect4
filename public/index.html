@@ -3,79 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Connect 4 - Game Lobby</title>
-    <link rel="stylesheet" href="lobby.css" />
+    <title>Connect 4 - Lobby</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="lobby.css" />
   </head>
   <body>
-    <div class="lobby-background"></div>
-    <main class="lobby-container">
-      <header class="lobby-header">
-        <div class="logo">C4</div>
-        <h1>Game Lobby</h1>
-        <p>Join the next match and prove your skill.</p>
-      </header>
+    <div class="lobby-container">
+      <h1>Connect 4</h1>
 
-      <div class="action-tabs">
-        <button class="tab-link active" data-tab="create">Create Game</button>
-        <button class="tab-link" data-tab="join">Join Game</button>
+      <div class="username-container">
+        <label for="username">Username:</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="Enter your name"
+          maxlength="12"
+        />
       </div>
-      <div class="form-wrapper">
-        <div class="input-group username-group">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <input type="text" id="username" placeholder="Enter your username" />
-        </div>
 
-        <div id="create" class="tab-content active">
-          <p>Start a new game and invite a friend.</p>
-          <button id="create-btn" class="btn btn-secondary">
-            Create & Get Match ID
-          </button>
-        </div>
-
-        <div id="join" class="tab-content">
-          <div class="input-group">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"
-              ></path>
-              <path
-                d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"
-              ></path>
-            </svg>
-            <input type="text" id="matchId" placeholder="Enter Match ID" />
-          </div>
-          <button id="join-btn" class="btn btn-secondary">Join Game</button>
-        </div>
-        <p id="error-message" class="error"></p>
+      <div class="tabs">
+        <button class="tab-link active" data-tab="create">Create Match</button>
+        <button class="tab-link" data-tab="join">Join Match</button>
+        <button class="tab-link" data-tab="ai">Play vs AI</button>
       </div>
-    </main>
+
+      <div id="create" class="tab-content active">
+        <h3>Create a New Match</h3>
+        <p>Click the button to create a new match and get a Match ID.</p>
+        <button id="create-btn" class="btn">Create Match</button>
+      </div>
+
+      <div id="join" class="tab-content">
+        <h3>Join an Existing Match</h3>
+        <div class="form-group">
+          <label for="matchId">Match ID:</label>
+          <input
+            type="text"
+            id="matchId"
+            name="matchId"
+            placeholder="Enter Match ID"
+          />
+        </div>
+        <button id="join-btn" class="btn">Join Match</button>
+      </div>
+
+      <div id="ai" class="tab-content">
+        <h3>Play vs AI</h3>
+        <p>Challenge our AI opponent, "Bot Lav".</p>
+        <div class="form-group">
+          <label for="difficulty">Difficulty:</label>
+          <select id="difficulty" name="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <button id="play-ai-btn" class="btn">Start Game</button>
+      </div>
+
+      <p id="error-message" class="error"></p>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="lobby.js"></script>
   </body>

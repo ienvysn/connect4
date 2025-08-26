@@ -1,208 +1,158 @@
-/* @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"); */
-
 :root {
-  /* Game Theme Colors */
-  --bg-color: #2e1a2c;
-  --board-bg: #1e101c;
-  --card-bg: #3a2437;
-  --border-color: #5a4057;
-  --text-color: #eae6f0;
-  --text-muted: #a396a0;
-  --primary-accent: #8a4fff;
-  --primary-accent-hover: #7b42e6;
-  --font-family: "Poppins", sans-serif;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  --primary-bg: #2c2a3e;
+  --container-bg: rgba(30, 28, 45, 0.8);
+  --text-light: #e0e0e0;
+  --text-dark: #a0a0a0;
+  --accent-primary: #8a4fff;
+  --accent-hover: #a174ff;
+  --input-bg: #1e1c2d;
+  --btn-bg: #f0f0f0;
+  --btn-text: #1e1c2d;
+  --error-color: #ff6b6b;
 }
 
 body {
-  font-family: var(--font-family);
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  font-family: "Poppins", sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--text-light);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 1.5rem;
+  margin: 0;
+  background-image: radial-gradient(
+    circle at top left,
+    rgba(138, 79, 255, 0.2),
+    transparent 40%
+  );
 }
 
 .lobby-container {
+  background-color: var(--container-bg);
+  padding: 2.5rem 3rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 450px;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 2.5rem 3rem;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.lobby-header {
-  margin-bottom: 2.5rem;
-}
-
-.logo {
-  display: inline-block;
-  font-size: 1.8rem;
-  font-weight: 700;
-  background-color: var(--primary-accent);
-  color: white;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  line-height: 60px;
+h1 {
+  font-size: 2.5rem;
   margin-bottom: 1rem;
-  box-shadow: 0 4px 15px rgba(138, 79, 255, 0.3);
+  font-weight: 700;
 }
 
-.lobby-header h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.lobby-header p {
-  color: var(--text-muted);
-  font-size: 1rem;
-}
-
-.form-wrapper {
-  border-top: 1px solid var(--border-color);
-  padding-top: 2rem;
-  margin-top: 2rem;
-}
-
-.input-group {
-  position: relative;
+.username-container {
   margin-bottom: 1.5rem;
-  text-align: left;
 }
 
-.input-group.username-group {
-  margin-bottom: 2rem;
+.username-container label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-dark);
 }
 
-.input-group svg {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-  width: 20px;
-  height: 20px;
-}
-
-input[type="text"] {
+input[type="text"],
+select {
   width: 100%;
-  padding: 1rem 1rem 1rem 3.5rem; /* Increased left padding */
-  background-color: var(--board-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-color);
-  font-family: inherit;
+  padding: 0.8rem 1rem;
+  background-color: var(--input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--text-light);
   font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-input[type="text"]::placeholder {
-  color: var(--text-muted);
-}
-
-input[type="text"]:focus {
+input[type="text"]:focus,
+select:focus {
   outline: none;
-  border-color: var(--primary-accent);
-  box-shadow: 0 0 0 3px rgba(138, 79, 255, 0.25);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(138, 79, 255, 0.3);
 }
 
-.action-tabs {
+.tabs {
   display: flex;
-  background-color: var(--board-bg);
-  border-radius: 8px;
-  padding: 4px;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tab-link {
-  flex: 1;
-  padding: 0.8rem;
+  background: none;
   border: none;
-  background-color: transparent;
-  color: var(--text-muted);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: 6px;
+  color: var(--text-dark);
+  padding: 0.8rem 1.2rem;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: color 0.3s, background-color 0.3s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px; /* Align with container border */
 }
 
 .tab-link.active {
-  background-color: var(--primary-accent);
-  color: white;
+  color: var(--text-light);
+  border-bottom-color: var(--accent-primary);
 }
 
 .tab-content {
   display: none;
-  margin-top: 2rem;
 }
 
 .tab-content.active {
   display: block;
 }
 
+.tab-content h3 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
 .tab-content p {
-  color: var(--text-muted);
+  color: var(--text-dark);
+  margin-top: 0;
   margin-bottom: 1.5rem;
-  font-size: 0.95rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
 }
 
 .btn {
-  width: 100%;
-  padding: 1rem;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
   border: none;
-  border-radius: 8px;
-  font-family: inherit;
+  padding: 0.9rem 1.5rem;
+  border-radius: 10px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  width: 100%;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
-.btn-primary {
-  background-color: var(--primary-accent);
-  color: white;
-}
-.btn-primary:hover {
-  background-color: var(--primary-accent-hover);
+.btn:hover {
+  background-color: #dcdcdc;
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-
-.btn-secondary {
-  background-color: #1e101c;
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-}
-.btn-secondary:hover {
-  background-color: var(--border-color);
-  border-color: var(--text-muted);
 }
 
 .error {
-  color: #ff6b6b;
-  font-size: 0.9rem;
-  text-align: center;
-  min-height: 1.2rem;
-  margin-top: 1.5rem;
-}
-
-.lobby-background {
-  display: none;
+  color: var(--error-color);
+  margin-top: 1rem;
+  height: 1.2em;
+  font-weight: 600;
 }

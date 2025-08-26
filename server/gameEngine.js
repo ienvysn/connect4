@@ -1,63 +1,84 @@
-// Initialize empty 6x7 board
+const ROWS = 6;
+const COLS = 7;
+
 function initBoard() {
-  return Array(6)
-    .fill(null)
-    .map(() => Array(7).fill(null));
+  return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 }
 
-// Apply a move (drop piece in column)
-// Returns { board, row, col } if success, null if invalid
-function applyMove(board, playerId, column) {
-  if (column < 0 || column >= 7) return null;
-
-  // Drop piece bottom-up
-  for (let row = 5; row >= 0; row--) {
-    if (board[row][column] === null) {
-      board[row][column] = playerId;
-      return { board, row, col: column };
+function applyMove(board, player, col) {
+  if (col < 0 || col >= COLS || board[0][col] !== 0) {
+    return null;
+  }
+  for (let row = ROWS - 1; row >= 0; row--) {
+    if (board[row][col] === 0) {
+      board[row][col] = player;
+      return { board, row, col };
     }
   }
-  return null; // column full
+  return null;
 }
 
-// Check if a player wins after placing at (row, col)
-function checkWin(board, row, col, playerId) {
-  const directions = [
-    [0, 1], // horizontal
-    [1, 0], // vertical
-    [1, 1], // diagonal down-right
-    [1, -1], // diagonal up-right
-  ];
+function isDraw(board) {
+  return board[0].every((cell) => cell !== 0);
+}
 
-  for (const [dr, dc] of directions) {
-    let count = 1;
-
-    // forward direction
-    let r = row + dr,
-      c = col + dc;
-    while (r >= 0 && r < 6 && c >= 0 && c < 7 && board[r][c] === playerId) {
-      count++;
-      r += dr;
-      c += dc;
+function checkWin(board, row, col, player) {
+  function checkDirection(startRow, startCol, dr, dc) {
+    let count = 0;
+    for (let i = 0; i < 4; i++) {
+      const r = startRow + i * dr;
+      const c = startCol + i * dc;
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === player) {
+        count++;
+      }
     }
+    return count === 4;
+  }
 
-    // backward direction
-    r = row - dr;
-    c = col - dc;
-    while (r >= 0 && r < 6 && c >= 0 && c < 7 && board[r][c] === playerId) {
-      count++;
-      r -= dr;
-      c -= dc;
+  if (row !== null && col !== null) {
+    // Check all possible winning lines that include the new piece
+    for (let i = 0; i < 4; i++) {
+      // Horizontal
+      if (checkDirection(row, col - i, 0, 1)) return true;
+      // Vertical
+      if (checkDirection(row - i, col, 1, 0)) return true;
+      // Diagonal /
+      if (checkDirection(row + i, col - i, -1, 1)) return true;
+      // Diagonal \
+      if (checkDirection(row - i, col - i, 1, 1)) return true;
     }
-
-    if (count >= 4) return true;
+  } else {
+    // AI check: Iterate through all possible starting points
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (
+          checkDirection(r, c, 0, 1) ||
+          checkDirection(r, c, 1, 0) ||
+          checkDirection(r, c, 1, 1) ||
+          checkDirection(r, c, 1, -1)
+        ) {
+          return true;
+        }
+      }
+    }
   }
   return false;
 }
 
-// Check if board is full
-function isDraw(board) {
-  return board.every((row) => row.every((cell) => cell !== null));
+function getValidMoves(board) {
+  const validMoves = [];
+  for (let c = 0; c < COLS; c++) {
+    if (board[0][c] === 0) {
+      validMoves.push(c);
+    }
+  }
+  return validMoves;
 }
 
-module.exports = { initBoard, applyMove, checkWin, isDraw };
+module.exports = {
+  initBoard,
+  applyMove,
+  isDraw,
+  checkWin,
+  getValidMoves,
+};

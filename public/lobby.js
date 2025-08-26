@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // --- Existing Elements ---
   const tabs = document.querySelectorAll(".tab-link");
   const tabContents = document.querySelectorAll(".tab-content");
   const usernameInput = document.getElementById("username");
@@ -6,8 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const matchIdInput = document.getElementById("matchId");
   const joinBtn = document.getElementById("join-btn");
   const errorMessage = document.getElementById("error-message");
-  const socket = io();
 
+  const playAiBtn = document.getElementById("play-ai-btn");
+  const difficultySelector = document.getElementById("difficulty");
+
+  const socket = io();
+  console.log("Socket initialized in lobby.");
+
+  // --- Tab Switching Logic ---
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       tabs.forEach((item) => item.classList.remove("active"));
@@ -17,9 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // --- Event Listeners ---
   createBtn.addEventListener("click", () => {
     const username = usernameInput.value.trim();
     if (!validateUsername(username)) return;
+    console.log(`[Emit: create_match] Username: ${username}`);
     socket.emit("create_match", { username });
   });
 
@@ -31,27 +40,51 @@ document.addEventListener("DOMContentLoaded", () => {
       showError("Please enter a valid Match ID.");
       return;
     }
+    console.log(
+      `[Emit: join_match] Username: ${username}, MatchID: ${matchId}`
+    );
     socket.emit("join_match", { username, matchId });
   });
 
+  // --- New AI Button Listener ---
+  playAiBtn.addEventListener("click", () => {
+    const username = usernameInput.value.trim();
+    if (!validateUsername(username)) return;
+
+    const difficulty = difficultySelector.value;
+    console.log(
+      `[Emit: create_ai_match] Username: ${username}, Difficulty: ${difficulty}`
+    );
+    socket.emit("create_ai_match", { username, difficulty });
+  });
+
+  // --- Socket Message Handling ---
   socket.on("message", (msg) => {
+    console.log("[On: message] Received message:", msg);
+
     if (msg.type === "match_created") {
-      window.location.href = `/game.html?matchId=${msg.matchId}`;
+      console.log(`Match created with ID: ${msg.matchId}. Redirecting...`);
       copyToClipboard(msg.matchId);
+      window.location.href = `/game.html?matchId=${msg.matchId}`;
     }
 
     if (
       msg.type === "join_success" ||
       (msg.type === "game_state" && msg.match)
     ) {
+      console.log(
+        `Successfully joined match ${msg.match.matchId}. Redirecting...`
+      );
       window.location.href = `/game.html?matchId=${msg.match.matchId}`;
     }
 
     if (msg.type === "error") {
+      console.error(`Received error from server: ${msg.error}`);
       showError(msg.error);
     }
   });
 
+  // --- Helper Functions ---
   function validateUsername(username) {
     if (!username) {
       showError("Please enter a username.");
@@ -83,7 +116,6 @@ function copyToClipboard(text) {
         console.error("Failed to copy text: ", err);
       });
   } else {
-    // Fallback for older browsers
     const textArea = document.createElement("textarea");
     textArea.value = text;
     textArea.style.position = "fixed";
