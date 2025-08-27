@@ -11,7 +11,7 @@ function evaluateWindow(window, piece) {
 
   const pieceCount = window.filter((p) => p === piece).length;
   const opponentCount = window.filter((p) => p === opponentPiece).length;
-  const emptyCount = window.filter((p) => p === 0).length;
+  const emptyCount = window.filter((p) => p === null).length;
 
   if (pieceCount === 4) {
     score += 10000;
@@ -136,19 +136,23 @@ function minimax(board, depth, alpha, beta, maximizingPlayer) {
 }
 
 function findBestMove(board, difficulty) {
-  let depth = 4;
-  if (difficulty === "easy") depth = 1;
-  if (difficulty === "hard") depth = 5;
-
-
-
-  if (difficulty === "easy" && Math.random() < 0.2) {
-    const availableMoves = gameEngine.getValidMoves(board);
-    const randomMove =
-      availableMoves[Math.floor(Math.random() * availableMoves.length)];
-
-    return randomMove;
+  const availableMoves = gameEngine.getValidMoves(board);
+  if (availableMoves.length === 0) {
+    return null;
   }
+
+  if (difficulty === "easy" && Math.random() < 0.75) {
+    return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+  }
+
+  // On medium mode, there is a 25% chance the AI will make a completely random move.
+  if (difficulty === "medium" && Math.random() < 0.25) {
+    return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+  }
+
+  let depth = 4;
+  if (difficulty === "easy") depth = 2;
+  if (difficulty === "hard") depth = 5;
 
   const [bestMove, score] = minimax(board, depth, -Infinity, Infinity, true);
 

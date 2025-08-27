@@ -64,9 +64,9 @@ document.addEventListener("DOMContentLoaded", () => {
       msg.type === "join_success" ||
       (msg.type === "game_state" && msg.match)
     ) {
-      console.log(
-        `Successfully joined match ${msg.match.matchId}. Redirecting...`
-      );
+      //  console.log(
+      //       `Successfully joined match ${msg.match.matchId}. Redirecting...`
+      //     );
       window.location.href = `/game.html?matchId=${msg.match.matchId}`;
     }
 

@@ -135,12 +135,12 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("resign", ({ matchId }) => {
-    console.log(`[Event: resign] Socket: ${socket.id}, Match: ${matchId}`);
+    // console.log(`[Event: resign] Socket: ${socket.id}, Match: ${matchId}`);
     roomManager.handleResignation(io, matchId, socket.id);
   });
 
   socket.on("disconnect", () => {
-    console.log(`[Socket Disconnected] ID: ${socket.id}`);
+    // console.log(`[Socket Disconnected] ID: ${socket.id}`);
     roomManager.handleDisconnect(io, socket.id);
   });
 }

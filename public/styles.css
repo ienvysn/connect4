@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 :root {
   --bg-color: #2c2a3e;
   --board-bg: #1e1c2d;
@@ -20,8 +21,6 @@
 
   --font-family: "Poppins", sans-serif;
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
 * {
   margin: 0;

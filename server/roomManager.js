@@ -1,15 +1,45 @@
 const gameEngine = require("./gameEngine");
 const Match = require("./models/Match");
 const aiEngine = require("./aiEngine");
-
+const { createClient } = require("redis");
 const timers = {};
 const TURN_DURATION = 15000;
 const RECONNECT_DURATION = 45000;
 
+const redisClient = createClient({ url: "redis://localhost:6379" });
+redisClient.on("error", (err) => {
+  /* console.log("Redis Client Error", err); */
+});
+redisClient.connect();
+
 function log(matchId, message) {
-  console.log(`[Match: ${matchId}] ${message}`);
+  // console.log(`[Match: ${matchId}] ${message}`);
 }
 
+async function getMatch(matchId) {
+  const cacheKey = `match:${matchId}`;
+
+  try {
+    const cachedMatch = await redisClient.get(cacheKey);
+
+    if (cachedMatch) {
+      const matchData = JSON.parse(cachedMatch);
+      return Match.hydrate(matchData); // Recreate Mongoose model instance
+    } else {
+      // Cache Miss
+      const match = await Match.findOne({ matchId }).lean();
+      if (match) {
+        await redisClient.set(cacheKey, JSON.stringify(match), { EX: 3600 });
+        return Match.hydrate(match);
+      }
+      return null;
+    }
+  } catch (error) {
+    console.error("Redis error:", error);
+
+    return Match.findOne({ matchId });
+  }
+}
 async function createMatch(socketId, username) {
   const matchId = Math.random().toString(36).substr(2, 6).toUpperCase();
   const player = { socketId, username, playerNumber: 1, isReady: false };
@@ -125,6 +155,9 @@ async function applyMove(io, matchId, playerId, column) {
   }
 
   await match.save();
+  await redisClient.set(`match:${matchId}`, JSON.stringify(match.toObject()), {
+    EX: 3600,
+  });
 
   const winnerPlayer = match.players.find((p) => p.socketId === match.winner);
   const winnerUsername =
@@ -172,6 +205,7 @@ async function applyMove(io, matchId, playerId, column) {
 
   if (isGameOver) {
     stopTurnTimer(matchId);
+    await redisClient.del(`match:${matchId}`);
   } else {
     startTurnTimer(io, matchId);
   }
