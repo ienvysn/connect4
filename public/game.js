@@ -68,19 +68,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
   matchIdDisplay.textContent = `Match ID: ${matchId}`;
-  console.log(`[Game Client] Initialized for Match ID: ${matchId}`);
+
 
   // --- Socket Event Handlers ---
   socket.on("connect", () => {
     myPlayerId = socket.id;
-    console.log(
-      `[Game Client] Connected to server with socket ID: ${myPlayerId}. Emitting player_ready.`
-    );
+
     socket.emit("player_ready", { matchId });
   });
 
   socket.on("message", (msg) => {
-    console.log("[Game Client] Received message from server:", msg);
+
+    const lastMove = msg.lastMove || null;
     switch (msg.type) {
       case "game_state":
         if (
@@ -94,20 +93,22 @@ document.addEventListener("DOMContentLoaded", () => {
         renderAll(currentMatch);
         break;
       case "board_update":
-        stopSound(soundClock);
+        stopActiveTimer();
+
         playSound(soundDrop);
         if (msg.nextTurn === myPlayerId) {
           playSound(soundTurn);
         }
         currentMatch.board = msg.board;
         currentMatch.turn = msg.nextTurn;
-        renderAll(currentMatch);
+        renderAll(currentMatch, lastMove);
         break;
       case "game_over":
-        stopSound(soundClock);
+        stopActiveTimer();
+
         currentMatch.board = msg.board;
         currentMatch.winner = msg.winner;
-        renderAll(currentMatch);
+        renderAll(currentMatch, lastMove);
         showGameOver(msg.winner, msg.winnerUsername);
         break;
       case "timer_start":
@@ -117,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         startCountdown(msg.duration);
         break;
       case "turn_switch_timer":
+        stopActiveTimer();
         if (msg.nextTurn === myPlayerId) {
           playSound(soundTurn);
         }
@@ -138,21 +140,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- Rendering ---
-  function renderAll(match) {
+  function renderAll(match, lastMove = null) {
     if (!match) {
       console.warn("[Game Client] renderAll called with no match data.");
       return;
     }
-    console.log(
-      "[Game Client] Rendering all components with match data:",
-      match
-    );
-    renderBoard(match);
+    renderBoard(match, lastMove);
     renderPlayerInfo(match);
     renderReadyStates(match);
   }
 
-  function renderBoard(match) {
+  function renderBoard(match, lastMove = null) {
     if (!isBoardRendered) {
       boardElement.innerHTML = "";
       for (let i = 0; i < 42; i++) {
@@ -171,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
       row.forEach((cell, colIndex) => {
         const slotIndex = rowIndex * 7 + colIndex;
         const slot = boardElement.children[slotIndex];
-
         slot.innerHTML = "";
 
         if (cell !== null) {
@@ -181,10 +178,18 @@ document.addEventListener("DOMContentLoaded", () => {
           if (player) {
             piece.classList.add(player.playerNumber === 1 ? "p1" : "p2");
           }
+
+          if (
+            lastMove &&
+            lastMove.row === rowIndex &&
+            lastMove.col === colIndex
+          ) {
+            piece.classList.add("animate-drop");
+          }
+
           slot.appendChild(piece);
         }
 
-        // 3. Update the hover effect
         if (isMyTurn) {
           slot.classList.add("my-turn-hover");
         } else {
@@ -268,9 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
       !currentMatch.winner
     ) {
       const column = parseInt(slot.dataset.column);
-      console.log(
-        `[Game Client] Clicked column ${column}. Emitting make_move.`
-      );
+
       socket.emit("make_move", {
         matchId,
         column: column,
@@ -280,34 +283,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   p1ReadyBtn.addEventListener("click", () => {
     playSound(soundReadyToggle);
-    console.log(
-      "[Game Client] Clicked Player 1 Ready button. Emitting player_set_ready."
-    );
+
     socket.emit("player_set_ready", { matchId });
   });
   p2ReadyBtn.addEventListener("click", () => {
     playSound(soundReadyToggle);
-    console.log(
-      "[Game Client] Clicked Player 2 Ready button. Emitting player_set_ready."
-    );
+
     socket.emit("player_set_ready", { matchId });
   });
   newGameBtn.addEventListener("click", () => (window.location.href = "/"));
 
   resignBtn.addEventListener("click", () => {
-    console.log("[Game Client] Clicked Resign button. Opening modal.");
+
     resignModal.style.display = "flex";
   });
   cancelResignBtn.addEventListener("click", () => {
-    console.log("[Game Client] Canceled resignation.");
+
     resignModal.style.display = "none";
   });
   confirmResignBtn.addEventListener("click", () => {
-    console.log("[Game Client] Confirmed resignation. Emitting resign.");
+
     socket.emit("resign", { matchId });
     window.location.href = "/";
   });
-
+  function stopActiveTimer() {
+    clearInterval(timerInterval);
+    stopSound(soundClock);
+    turnTimerBar.style.transition = "none";
+    // Set width to 0% to visually represent an inactive or completed timer
+    turnTimerBar.style.width = "0%";
+  }
   // --- Timers & Overlays ---
   function startTurnTimer(duration) {
     clearInterval(timerInterval);
@@ -383,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showToast(message) {
-    console.log(`[Game Client] Showing toast: "${message}"`);
+
     const toast = document.createElement("div");
     toast.className = "toast";
     toast.textContent = message;

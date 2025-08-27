@@ -1,20 +1,23 @@
-/* --- Global Styles & Variables --- */
 :root {
-  --bg-color: #2e1a2c;
-  --board-bg: #1e101c;
-  --card-bg: #3a2437;
-  --border-color: #5a4057;
-  --text-color: #eae6f0;
-  --text-muted: #a396a0;
-  --p1-color: #c9afff;
-  --p2-color: #48d1cc;
+  --bg-color: #2c2a3e;
+  --board-bg: #1e1c2d;
+  --card-bg: #1e1c2d;
+  --border-color: #4a4760;
+  --text-color: #e0e0e0;
+  --text-muted: #a0a0a0;
   --primary-accent: #8a4fff;
-  --ready-color: #48d1cc;
-  --not-ready-color: #e94560;
-  --danger-color: #e94560;
-  --timer-high: #48d1cc;
-  --timer-medium: #f9a826;
-  --timer-low: #e94560;
+  --danger-color: #ff6b6b;
+
+  /* New Game-Specific Colors */
+  --p1-color: #c9afff;
+  --p2-color: #ff6ac1;
+  --ready-color: #50fa7b;
+  --not-ready-color: var(--danger-color);
+
+  --timer-high: var(--text-muted);
+  --timer-medium: var(--text-muted);
+  --timer-low: var(--text-muted);
+
   --font-family: "Poppins", sans-serif;
 }
 
@@ -116,12 +119,12 @@ body {
   font-size: 0.9rem;
   font-weight: 500;
   margin-top: 4px;
-  min-height: 1.2em; /* Prevents layout shift when text appears */
+  min-height: 1.2em;
   transition: color 0.3s ease;
 }
 
 .player-status.turn-active {
-  color: var(--ready-color); /* A bright, attention-grabbing color */
+  color: var(--ready-color);
 }
 
 .player-status.turn-waiting {
@@ -177,12 +180,7 @@ body {
   height: 100%;
   width: 100%;
   border-radius: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--timer-low) 0%,
-    var(--timer-medium) 50%,
-    var(--timer-high) 100%
-  );
+  background-color: var(--text-muted);
   transition: width 0.2s linear;
 }
 
@@ -213,6 +211,9 @@ body {
   height: 85%;
   border-radius: 50%;
   box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.2);
+  /* animation: dropIn 0.3s ease-out; */
+}
+.piece.animate-drop {
   animation: dropIn 0.3s ease-out;
 }
 .p1 {
@@ -237,8 +238,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* Allows clicks to pass through */
-  z-index: 99; /* Below the modal, above everything else */
+  pointer-events: none;
+  z-index: 99;
 }
 
 .game-status-overlay {

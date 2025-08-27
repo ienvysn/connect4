@@ -140,24 +140,18 @@ function findBestMove(board, difficulty) {
   if (difficulty === "easy") depth = 1;
   if (difficulty === "hard") depth = 5;
 
-  console.log(
-    `[AI Engine] Finding best move. Difficulty: ${difficulty}, Depth: ${depth}`
-  );
+
 
   if (difficulty === "easy" && Math.random() < 0.2) {
     const availableMoves = gameEngine.getValidMoves(board);
     const randomMove =
       availableMoves[Math.floor(Math.random() * availableMoves.length)];
-    console.log(
-      `[AI Engine] Easy mode triggered: Making a random move to column ${randomMove}`
-    );
+
     return randomMove;
   }
 
   const [bestMove, score] = minimax(board, depth, -Infinity, Infinity, true);
-  console.log(
-    `[AI Engine] Minimax decided on column ${bestMove} with score: ${score}`
-  );
+
   return bestMove;
 }
 

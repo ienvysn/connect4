@@ -83,7 +83,7 @@ async function joinMatch(matchId, socketId, username) {
   match.players.push(player);
   return match.save();
 }
-
+// In server/roomManager.js
 async function applyMove(io, matchId, playerId, column) {
   const match = await Match.findOne({ matchId });
   if (!match) throw new Error("No match Found");
@@ -126,19 +126,33 @@ async function applyMove(io, matchId, playerId, column) {
 
   await match.save();
 
-  if (match.turn === "AI_PLAYER" && !isGameOver) {
-    io.to(matchId).emit("message", {
-      type: "board_update",
-      board: match.board,
-      nextTurn: match.turn,
-    });
-    if (match.isAiMatch) stopTurnTimer(matchId);
+  const winnerPlayer = match.players.find((p) => p.socketId === match.winner);
+  const winnerUsername =
+    match.winner === "draw" ? "draw" : winnerPlayer?.username;
 
-    const thinkTime = Math.random() * 5000 + 3000;
+  const messagePayload = {
+    board: match.board,
+    nextTurn: match.turn,
+    winner: match.winner,
+    winnerUsername: winnerUsername,
+    lastMove: { row: moveResult.row, col: moveResult.col },
+  };
+
+  if (match.turn === "AI_PLAYER" && !isGameOver) {
+    messagePayload.type = "board_update";
+    io.to(matchId).emit("message", messagePayload);
+
+    startTurnTimer(io, matchId);
+    const thinkTime = Math.random() * 6000 + 2000;
+
     setTimeout(async () => {
       try {
         const currentMatch = await Match.findOne({ matchId });
-        if (currentMatch.status !== "in-progress") return;
+        if (
+          currentMatch.status !== "in-progress" ||
+          currentMatch.turn !== "AI_PLAYER"
+        )
+          return;
         const bestMove = aiEngine.findBestMove(
           currentMatch.board,
           currentMatch.difficulty
@@ -153,18 +167,8 @@ async function applyMove(io, matchId, playerId, column) {
     return match;
   }
 
-  const messageType = isGameOver ? "game_over" : "board_update";
-  const winnerPlayer = match.players.find((p) => p.socketId === match.winner);
-  const winnerUsername =
-    match.winner === "draw" ? "draw" : winnerPlayer?.username;
-
-  io.to(matchId).emit("message", {
-    type: messageType,
-    board: match.board,
-    nextTurn: match.turn,
-    winner: match.winner,
-    winnerUsername: winnerUsername,
-  });
+  messagePayload.type = isGameOver ? "game_over" : "board_update";
+  io.to(matchId).emit("message", messagePayload);
 
   if (isGameOver) {
     stopTurnTimer(matchId);

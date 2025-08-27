@@ -2,12 +2,7 @@ const roomManager = require("./roomManager");
 const Match = require("./models/Match");
 
 function registerSocketHandlers(io, socket) {
-  console.log(`[Socket Connected] ID: ${socket.id}`);
-
   socket.on("create_match", async ({ username }) => {
-    console.log(
-      `[Event: create_match] User: ${username}, Socket: ${socket.id}`
-    );
     try {
       const match = await roomManager.createMatch(socket.id, username);
       socket.join(match.matchId);
@@ -22,9 +17,6 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("create_ai_match", async ({ username, difficulty }) => {
-    console.log(
-      `[Event: create_ai_match] User: ${username}, Difficulty: ${difficulty}, Socket: ${socket.id}`
-    );
     try {
       const match = await roomManager.createAIMatch(
         socket.id,
@@ -47,9 +39,6 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("join_match", async ({ matchId, username }) => {
-    console.log(
-      `[Event: join_match] User: ${username}, Socket: ${socket.id}, Match: ${matchId}`
-    );
     try {
       const match = await roomManager.joinMatch(matchId, socket.id, username);
       socket.join(matchId);
@@ -64,9 +53,6 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("player_ready", async ({ matchId }) => {
-    console.log(
-      `[Event: player_ready] Socket: ${socket.id}, Match: ${matchId}`
-    );
     try {
       let match = await Match.findOne({ matchId });
       if (match) {
@@ -76,9 +62,6 @@ function registerSocketHandlers(io, socket) {
         );
 
         if (stalePlayer) {
-          console.log(
-            `[Reconnect] Stale player in ${matchId}. Old socket: ${stalePlayer.socketId}, New socket: ${socket.id}`
-          );
           if (match.turn === stalePlayer.socketId) {
             match.turn = socket.id;
           }
@@ -105,15 +88,11 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("player_set_ready", async ({ matchId }) => {
-    console.log(
-      `[Event: player_set_ready] Socket: ${socket.id}, Match: ${matchId}`
-    );
     try {
       let match = await roomManager.setPlayerReady(matchId, socket.id);
       io.to(matchId).emit("message", { type: "game_state", match });
 
       if (match.status === "countdown") {
-        console.log(`[Game Flow] Match ${matchId} starting countdown.`);
         io.to(matchId).emit("message", {
           type: "countdown_start",
           duration: 3,
@@ -128,7 +107,7 @@ function registerSocketHandlers(io, socket) {
             type: "game_state",
             match: finalMatch,
           });
-          console.log(`[Game Flow] Match ${matchId} started.`);
+
           roomManager.startTurnTimer(io, matchId);
         }, 3000);
       }
@@ -141,9 +120,6 @@ function registerSocketHandlers(io, socket) {
   });
 
   socket.on("make_move", async ({ matchId, column }) => {
-    console.log(
-      `[Event: make_move] Socket: ${socket.id}, Match: ${matchId}, Column: ${column}`
-    );
     try {
       const match = await roomManager.applyMove(io, matchId, socket.id, column);
       if (!match) {

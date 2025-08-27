@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const difficultySelector = document.getElementById("difficulty");
 
   const socket = io();
-  console.log("Socket initialized in lobby.");
 
   // --- Tab Switching Logic ---
   tabs.forEach((tab) => {
@@ -28,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   createBtn.addEventListener("click", () => {
     const username = usernameInput.value.trim();
     if (!validateUsername(username)) return;
-    console.log(`[Emit: create_match] Username: ${username}`);
+
     socket.emit("create_match", { username });
   });
 
@@ -40,9 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showError("Please enter a valid Match ID.");
       return;
     }
-    console.log(
-      `[Emit: join_match] Username: ${username}, MatchID: ${matchId}`
-    );
+
     socket.emit("join_match", { username, matchId });
   });
 
@@ -52,18 +49,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!validateUsername(username)) return;
 
     const difficulty = difficultySelector.value;
-    console.log(
-      `[Emit: create_ai_match] Username: ${username}, Difficulty: ${difficulty}`
-    );
+
     socket.emit("create_ai_match", { username, difficulty });
   });
 
   // --- Socket Message Handling ---
   socket.on("message", (msg) => {
-    console.log("[On: message] Received message:", msg);
-
     if (msg.type === "match_created") {
-      console.log(`Match created with ID: ${msg.matchId}. Redirecting...`);
       copyToClipboard(msg.matchId);
       window.location.href = `/game.html?matchId=${msg.matchId}`;
     }
@@ -109,9 +101,7 @@ function copyToClipboard(text) {
   if (navigator.clipboard) {
     navigator.clipboard
       .writeText(text)
-      .then(() => {
-        console.log("Match ID copied to clipboard");
-      })
+      .then(() => {})
       .catch((err) => {
         console.error("Failed to copy text: ", err);
       });
@@ -125,7 +115,6 @@ function copyToClipboard(text) {
     textArea.select();
     try {
       document.execCommand("copy");
-      console.log("Match ID copied to clipboard (fallback)");
     } catch (err) {
       console.error("Fallback: Oops, unable to copy", err);
     }
