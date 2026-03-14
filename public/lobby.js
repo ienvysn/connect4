@@ -11,7 +11,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const playAiBtn = document.getElementById("play-ai-btn");
   const difficultySelector = document.getElementById("difficulty");
 
-  const socket = io();
+  // Determine backend URL (Railway for production, localhost for development)
+  // This can be set in a config or derived
+  const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3000"
+    : "https://connect4-production.up.railway.app"; // Placeholder, user will need to update this
+
+  const socket = io(BACKEND_URL);
+
+  // --- Load Username from Local Storage ---
+  const savedUsername = localStorage.getItem("c4_username");
+  if (savedUsername) {
+    usernameInput.value = savedUsername;
+  }
 
   // --- Tab Switching Logic ---
   tabs.forEach((tab) => {
@@ -28,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const username = usernameInput.value.trim();
     if (!validateUsername(username)) return;
 
+    localStorage.setItem("c4_username", username);
     socket.emit("create_match", { username });
   });
 
@@ -40,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    localStorage.setItem("c4_username", username);
     socket.emit("join_match", { username, matchId });
   });
 
@@ -48,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const username = usernameInput.value.trim();
     if (!validateUsername(username)) return;
 
+    localStorage.setItem("c4_username", username);
     const difficulty = difficultySelector.value;
 
     socket.emit("create_ai_match", { username, difficulty });

@@ -1,5 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const socket = io();
+const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3000"
+    : "https://connect4-production.up.railway.app";
+
+  const socket = io(BACKEND_URL);
 
   // --- State Management ---
   let currentMatch = null;
@@ -21,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const turnTimerBar = document.getElementById("turn-timer-bar");
   const gameOverOverlay = document.getElementById("game-status-overlay"),
     gameOverText = document.getElementById("game-status-text");
+  const reviewBoardBtn = document.getElementById("review-board-btn");
+  const showResultsBtn = document.getElementById("show-results-btn");
   const countdownOverlay = document.getElementById("countdown-overlay"),
     countdownText = document.getElementById("countdown-text");
   const newGameBtn = document.getElementById("new-game-btn");
@@ -291,7 +297,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.emit("player_set_ready", { matchId });
   });
+
   newGameBtn.addEventListener("click", () => (window.location.href = "/"));
+
+  if (reviewBoardBtn) {
+    reviewBoardBtn.addEventListener("click", () => {
+      gameOverOverlay.classList.add("hidden");
+      if (showResultsBtn) showResultsBtn.style.display = "block";
+    });
+  }
+
+  if (showResultsBtn) {
+    showResultsBtn.addEventListener("click", () => {
+      gameOverOverlay.classList.remove("hidden");
+      showResultsBtn.style.display = "none";
+    });
+  }
 
   resignBtn.addEventListener("click", () => {
 
@@ -373,6 +394,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     gameOverText.textContent = message;
     gameOverOverlay.style.display = "flex";
+    gameOverOverlay.classList.remove("hidden");
+    showResultsBtn.style.display = "none";
 
     if (isWinner) {
       const myConfetti = confetti.create(confettiCanvas, {

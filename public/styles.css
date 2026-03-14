@@ -247,12 +247,17 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.4);
   display: none;
   justify-content: center;
   align-items: center;
   z-index: 100;
-  backdrop-filter: blur(5px);
+  transition: opacity 0.3s ease;
+}
+
+.game-status-overlay.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 .status-box {
   background-color: var(--card-bg);
@@ -265,6 +270,30 @@ body {
 .status-box h2 {
   font-size: 2.5rem;
   margin-bottom: 2rem;
+}
+.status-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.btn-floating {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 101;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 .btn {
   background: var(--primary-accent);

@@ -32,21 +32,34 @@ app.use(
         "https://cdn.jsdelivr.net",
       ],
       "worker-src": ["'self'", "blob:"],
-      "connect-src": ["'self'", "ws://localhost:3000", "wss://localhost:3000"],
+      "connect-src": [
+        "'self'",
+        "ws://localhost:3000",
+        "wss://localhost:3000",
+        "https://*.vercel.app",
+        "wss://*.vercel.app",
+        process.env.BACKEND_URL ? process.env.BACKEND_URL.replace('http', 'ws') : "",
+        process.env.BACKEND_URL ? process.env.BACKEND_URL : ""
+      ].filter(Boolean),
     },
   })
 );
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || "*",
+  methods: ["GET", "POST"],
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(sessionMiddleware);
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
 });
 app.use(limiter);
 const staticOptions = {
-  maxAge: "7d", // Cache files for 7 days
+  maxAge: "7d",
 };
 app.use(express.static(path.join(__dirname, "../public"), staticOptions));
 
@@ -69,7 +82,7 @@ io.on("connection", (socket) => {
   registerSocketHandlers(io, socket);
 });
 
-// --- Server and Database Initialization ---
+
 const PORT = process.env.PORT || 3000;
 mongoose
   .connect(process.env.MONGO_URI)

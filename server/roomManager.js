@@ -6,11 +6,12 @@ const timers = {};
 const TURN_DURATION = 15000;
 const RECONNECT_DURATION = 45000;
 
-const redisClient = createClient({ url: "redis://localhost:6379" });
+const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const redisClient = createClient({ url: redisUrl });
 redisClient.on("error", (err) => {
-  /* console.log("Redis Client Error", err); */
+  console.error("Redis Client Error", err);
 });
-redisClient.connect();
+redisClient.connect().catch(err => console.error("Could not connect to Redis", err));
 
 function log(matchId, message) {
   // console.log(`[Match: ${matchId}] ${message}`);
@@ -176,7 +177,7 @@ async function applyMove(io, matchId, playerId, column) {
     io.to(matchId).emit("message", messagePayload);
 
     startTurnTimer(io, matchId);
-    const thinkTime = Math.random() * 6000 + 2000;
+    const thinkTime = Math.random() * 3000 + 2000;
 
     setTimeout(async () => {
       try {

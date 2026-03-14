@@ -35,9 +35,18 @@
     <div id="game-status-overlay" class="game-status-overlay">
       <div class="status-box">
         <h2 id="game-status-text">You Win!</h2>
-        <button id="new-game-btn" class="btn">Play Again</button>
+        <div class="status-actions">
+          <button id="new-game-btn" class="btn">Play Again</button>
+          <button id="review-board-btn" class="btn btn-secondary">
+            Review Board
+          </button>
+        </div>
       </div>
     </div>
+
+    <button id="show-results-btn" class="btn btn-floating" style="display: none">
+      Show Results
+    </button>
 
     <main class="game-container">
       <header class="header">
