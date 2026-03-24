@@ -1,7 +1,6 @@
-language: nodejs
-node_args: --dns-result-order=ipv4first
-build:
-  builder: NIXPACKS
-deploy:
-  startCommand: node server/index.js
-  restartPolicyOnFailure: true
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "node server/index.js"
+restartPolicyType = "on_failure"
