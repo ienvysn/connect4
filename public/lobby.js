@@ -11,13 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const playAiBtn = document.getElementById("play-ai-btn");
   const difficultySelector = document.getElementById("difficulty");
 
-  // Determine backend URL (Railway for production, localhost for development)
-  // This can be set in a config or derived
-  const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000"
-    : "https://connect4-production.up.railway.app"; // Placeholder, user will need to update this
-
-  const socket = io(BACKEND_URL);
+  // Connect to the same host that served the page
+  const socket = io();
 
   // --- Load Username from Local Storage ---
   const savedUsername = localStorage.getItem("c4_username");

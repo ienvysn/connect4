@@ -1,8 +1,0 @@
-node_modules
-.env
-.git
-.gitignore
-npm-debug.log
-yarn-error.log
-.gemini
-tmp

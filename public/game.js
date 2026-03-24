@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000"
-    : "https://connect4-production.up.railway.app";
-
-  const socket = io(BACKEND_URL);
+  // Connect to the same host that served the page
+  const socket = io();
 
   // --- State Management ---
   let currentMatch = null;

@@ -28,6 +28,8 @@ const matchSchema = new mongoose.Schema({
     default: "waiting",
   },
   reasonForWin: { type: String },
+  isAiMatch: { type: Boolean, default: false },
+  difficulty: { type: String, enum: ["easy", "medium", "hard"] },
   createdAt: { type: Date, default: Date.now },
 });
 

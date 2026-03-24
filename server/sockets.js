@@ -72,7 +72,7 @@ function registerSocketHandlers(io, socket) {
           match = await Match.findOne({ matchId });
 
           if (match.players.length === 2 && match.status === "in-progress") {
-            io.to(matchId).emit("message", { type: "opponent_reconnected" });
+            socket.to(matchId).emit("message", { type: "opponent_reconnected" });
           }
         }
         io.to(matchId).emit("message", { type: "game_state", match });
